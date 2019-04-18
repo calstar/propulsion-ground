@@ -20,7 +20,22 @@ void setup() {
   Serial.begin(9600); 
 }
 
+
+/**
+ * To use, first open the Serial Monitor on your computer while the Arduino is connected via USB
+ * Go to Tools > Serial Monitor
+ * While sketch is running, type commands in the format: [servo number] [angle in degrees] and press return/Enter
+ * to move a servo. Servo numbers should be 1, 2, or 3 labeled on the shield, and angles should generally be in the range 60-190
+ * Example:
+ * 1 100
+ *  I received: 
+    00:22:38.532 -> Servo : 1
+    00:22:38.532 -> Angle: 100
+    00:22:38.579 -> ----
+    00:22:38.579 -> Servo 1 to angle: 100
+ */
 void loop() {
+// Uncomment the following to have the servos automatically move, for testing only
 //  myservo_1.write(80);
 //  delay(500);
 //  myservo_2.write(80);
