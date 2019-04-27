@@ -33,7 +33,7 @@ void loop() {
             Serial.println("Error: Servo select must be between 1 and 3.");
         }
         int servoAngle = Serial.parseInt();
-        if (servoAngle < 0 || servoAngle > 180 || ) {
+        if (servoAngle < 0 || servoAngle > 180) {
             goodData = false;
             Serial.println("Error: Servo angle must be between 0 and 180.");
         }
