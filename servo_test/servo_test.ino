@@ -1,97 +1,70 @@
 #include <Servo.h> 
 
-//initialize each servo
-Servo myservo_1;
-Servo myservo_2;
-Servo myservo_3;
-
-//initialize variables for input over serial
-uint8_t servoSelect = 0;
-uint8_t servoAngle = 0;
-
-void setup() {
-
-  //map servo objects to pins on Arduino
-  //attach(pin, min pulse width in usec, max pulse width in usec)
-  myservo_1.attach(6,870,2320);
-  myservo_2.attach(9,870,2320);
-  myservo_3.attach(11,870,2320);
-  //start reading data over serial in
-  Serial.begin(9600); 
-}
-
-
-/**
- * To use, first open the Serial Monitor on your computer while the Arduino is connected via USB
+/*
+ * To use, first open the Serial Monitor (or a serial interface like PuTTY) on your computer while the Arduino is connected via USB
  * Go to Tools > Serial Monitor
- * While sketch is running, type commands in the format: [servo number] [angle in degrees] and press return/Enter
- * to move a servo. Servo numbers should be 1, 2, or 3 labeled on the shield, and angles should generally be in the range 60-190
+ * While sketch is running, type commands in the format: "[servo number] [angle in degrees]" and press return/Enter
+ * to move a servo. Servo numbers should be 1, 2, or 3 labeled on the shield, and angles should generally be in the range 0-180
  * Example:
  * 1 100
- *  I received: 
-    00:22:38.532 -> Servo : 1
-    00:22:38.532 -> Angle: 100
-    00:22:38.579 -> ----
-    00:22:38.579 -> Servo 1 to angle: 100
  */
-void loop() {
-  // Uncomment the following to have the servos automatically move, for testing only
-  //  myservo_1.write(80);
-  //  delay(500);
-  //  myservo_2.write(80);
-  //  delay(500);
-  //  myservo_3.write(80);
-  //  delay(500);
-  //  myservo_1.write(170);
-  //  delay(500);
-  //  myservo_2.write(170);
-  //  delay(500);
-  //  myservo_3.write(170);
-  //  delay(500);
-  if (Serial.available() > 0) {
-          // read the incoming two numbers:
-          uint8_t servoSelect = Serial.parseInt();
-          bool goodData = true;
-          //make sure we selected a valid servo
-          if (servoSelect != 1 && servoSelect != 2 && servoSelect != 3) {
-            goodData = false;
-          }
-          uint8_t servoAngle = Serial.parseInt();
-          if (servoAngle > 255 || servoAngle < 0) {
-            goodData = false;
-          }
-          Serial.flush();
-          if (goodData) {
-            // say what you got:
-            Serial.println("I received: ");
-            Serial.print("Servo : ");
-            Serial.println(servoSelect, DEC);
-            Serial.print("Angle: ");
-            Serial.println(servoAngle, DEC);
-            Serial.println("----");
-  
-            switch(servoSelect) {
-              case 1:
-                myservo_1.write(servoAngle);
-                Serial.print("Servo 1 to angle: ");
-                Serial.println(servoAngle, DEC);
-                break;
-              case 2:
-                myservo_2.write(servoAngle);
-                Serial.print("Servo 2 to angle: ");
-                Serial.println(servoAngle, DEC);
-                break;
-              case 3:
-                myservo_3.write(servoAngle);
-                Serial.print("Servo 3 to angle: ");
-                Serial.println(servoAngle, DEC);
-                break;
-              default:
-                break;
-            }
-          } else {
-            Serial.println("Bad Input");
-          }
-  }
 
+Servo servo1;
+Servo servo2;
+Servo servo3;
+
+#define SERVO_MIN_USEC (870)
+#define SERVO_MAX_USEC (2320)
+#define SERVO1_PIN (6)
+#define SERVO2_PIN (9)
+#define SERVO3_PIN (11)
+
+void setup() {
+    Serial.begin(9600); 
+}
+void loop() {
+    if (Serial.available() > 0) {
+        bool goodData = true;
+        // Read the incoming two numbers:
+        int servoSelect = Serial.parseInt();
+        // Make sure we selected a valid servo
+        if (servoSelect < 1 || servoSelect > 3) {
+            goodData = false;
+            Serial.println("Error: Servo select must be between 1 and 3.");
+        }
+        int servoAngle = Serial.parseInt();
+        if (servoAngle < 0 || servoAngle > 180 || ) {
+            goodData = false;
+            Serial.println("Error: Servo angle must be between 0 and 180.");
+        }
+        if (goodData) {
+            Serial.print("Setting servo ");
+            Serial.print(servoSelect);
+            Serial.print(" to angle ");
+            Serial.println(servoAngle);
+
+            switch(servoSelect) {
+                case 1:
+                    if (!servo1.attached()) {
+                      servo1.attach(SERVO1_PIN, SERVO_MIN_USEC, SERVO_MAX_USEC);
+                    }
+                    servo1.write(servoAngle);
+                    break;
+                case 2:
+                    if (!servo2.attached()) {
+                      servo2.attach(SERVO2_PIN, SERVO_MIN_USEC, SERVO_MAX_USEC);
+                    }
+                    servo2.write(servoAngle);
+                    break;
+                case 3:
+                    if (!servo3.attached()) {
+                      servo3.attach(SERVO3_PIN, SERVO_MIN_USEC, SERVO_MAX_USEC);
+                    }
+                    servo3.write(servoAngle);
+                    break;
+                default: break;
+            }
+        }
+        Serial.flush();
+    }
 }
