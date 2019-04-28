@@ -13,8 +13,8 @@ Servo servo1;
 Servo servo2;
 Servo servo3;
 
-#define SERVO_MIN_USEC (870)
-#define SERVO_MAX_USEC (2320)
+#define SERVO_MIN_USEC (900)
+#define SERVO_MAX_USEC (2100)
 #define SERVO1_PIN (6)
 #define SERVO2_PIN (9)
 #define SERVO3_PIN (11)
