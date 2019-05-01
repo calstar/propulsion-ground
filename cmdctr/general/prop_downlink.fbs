@@ -1,22 +1,16 @@
-//include "msg_fc_update.fbs"; /* includes FCData */
-
 namespace Calstar;
 
-/* This is over radio and should be kept small */
-
-enum TPCState : byte { Pad = 0, Flight = 1 /* add others to match the state machine in the TPC firmware */ }
 enum PropDownlinkType : byte { StateUpdate = 0, Ack = 1 }
 table PropDownlinkMsg {
     Bytes : uint8;
-    State : TPCState;
-    FCPowered : bool;
-    //FCMsg : FCUpdateMsg;
-    GPSString : string;
-    BattVoltage : uint16;
     FrameID : uint8;
     AckReqd : bool;
-    TimeStamp : uint64;
     Type : PropDownlinkType;
+    LoadCell: float;
+    Servos: [uint8];
+    Thermocouples: [uint16];
+    FlowSwitch: bool;
+    PressureTransducers: [uint16];
 }
 
 root_type PropDownlinkMsg;

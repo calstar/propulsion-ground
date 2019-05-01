@@ -121,6 +121,10 @@ void start() {
     frame_id = 0;
 
     t_last_resend = t.read_ms();
+
+    // Input button set to internal pull-up
+    // It is now active low
+    io1.mode(PullUp);
 }
 
 void loop() {
@@ -146,14 +150,10 @@ void loop() {
                 pc.printf("{\"status\":\"retry off\"}\r\n");
             } else {
                 if (retry) {
-                    pc.printf("{\"status\":\"sending with retry: '%s'\"}\r\n", line.c_str());
-                    line += '\n';
                     tx_led = 1;
                     sendPropUplinkMsg(line, true);
                     t_tx_led_on = t.read_ms();
                 } else {
-                    pc.printf("{\"status\":\"sending once: '%s'\"}\r\n", line.c_str());
-                    line += '\n';
                     tx_led = 1;
                     sendPropUplinkMsg(line, false);
                     t_tx_led_on = t.read_ms();
@@ -198,24 +198,34 @@ bool sendPropUplinkMsg(const std::string &str, bool with_ack) {
         servos[0] = (uint8_t)std::stoi(str.substr(1,3));
         servos[1] = (uint8_t)std::stoi(str.substr(5,3));
         servos[2] = (uint8_t)std::stoi(str.substr(9,3));
+        pc.printf("{\"status\":\"sending servo command (%d,%d,%d)\"}\r\n", servos[0], servos[1], servos[2]);
     } else if (validIgnitionOffCmd(str)) {
         type = PropUplinkType_IgnitionOff;
+        pc.printf("{\"status\":\"sending ignition off command\r\n");
     } else if (validIgnitionCmd(str)) {
-        type = PropUplinkType_Ignition;
+        if (!io1) {
+            // Button is active-low, so it's currently pressed and we can send ignition
+            type = PropUplinkType_Ignition;
+            pc.printf("{\"status\":\"sending ignition pulse command\r\n");
+        } else {
+            // Button not pressed
+            pc.printf("{\"status\":\"transmission of ignition command is locked\"}\r\n");
+            return false;
+        }
     } else {
         pc.printf("{\"status\":\"'%s' invalid\"}\r\n", str.c_str());
         return false;
     }
 
-    auto servos_offset = builder.CreateVector(servos, sizeof(servos));
+    auto servos_offset = type == PropUplinkType_Servos ? builder.CreateVector(servos, sizeof(servos)) : 0;
 
-    Offset<PropUplinkMsg> msg = CreatePropUplinkMsg(builder, 1, type, servos_offset, frame_id, with_ack);
+    Offset<PropUplinkMsg> msg = CreatePropUplinkMsg(builder, 1, frame_id, with_ack, type, servos_offset);
     builder.Finish(msg);
 
     const uint8_t bytes = (uint8_t)builder.GetSize();
     builder.Reset();
-    servos_offset = builder.CreateVector(servos, sizeof(servos));
-    msg = CreatePropUplinkMsg(builder, bytes, type, servos_offset, frame_id, with_ack);
+    servos_offset = type == PropUplinkType_Servos ? builder.CreateVector(servos, sizeof(servos)) : 0;
+    msg = CreatePropUplinkMsg(builder, bytes, frame_id, with_ack, type, servos_offset);
     builder.Finish(msg);
 
     const uint8_t *buf = builder.GetBufferPointer();
@@ -317,11 +327,11 @@ void resend_msgs() {
 
 void sendAck(uint8_t frame_id) {
     builder.Reset();
-    Offset<PropUplinkMsg> ack = CreatePropUplinkMsg(builder, 1, PropUplinkType_Ack, 0, frame_id, false);
+    Offset<PropUplinkMsg> ack = CreatePropUplinkMsg(builder, 1, frame_id, false, PropUplinkType_Ack, 0);
     builder.Finish(ack);
     const uint8_t bytes = builder.GetSize();
     builder.Reset();
-    ack = CreatePropUplinkMsg(builder, bytes, PropUplinkType_Ack, 0, frame_id, false);
+    ack = CreatePropUplinkMsg(builder, bytes, frame_id, false, PropUplinkType_Ack, 0);
     builder.Finish(ack);
     radioTx(builder.GetBufferPointer(), builder.GetSize());
 }
@@ -329,6 +339,7 @@ void sendAck(uint8_t frame_id) {
 
 void radioTx(const uint8_t *const data, const int32_t data_len) {
     radio.send(data, data_len);
+    pc.printf("{\"status\":\"Sending %d bytes\"}\r\n", data_len);
 }
 
 bool validServoCmd(const std::string &str) {
