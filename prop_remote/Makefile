@@ -1,10 +1,10 @@
 build_target = NUCLEO_F401RE
 build_toolchain = GCC_ARM
 build_dir = BUILD
-project_name = cmdctr
+project_name = prop_remote
 
 outdir = out/
-outname = cmdctr.bin
+outname = prop_remote.bin
 outpath = $(outdir)$(outname)
 
 FLATC = ../general/flatc

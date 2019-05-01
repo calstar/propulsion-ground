@@ -1,22 +1,16 @@
 /*
  * CalSTAR Avionics Ground Station
  *
- * file: cmdctr.h
+ * file: prop_remote.h
  *
- * Provides communication between laptop and ground propulsion test setup.
- * Communicates with laptop via UART over USB (with UART with an FTDI cable as
- * backup) Communicates with ground propulsion test setup via radio, 433 MHz
- * Has 2 configurable LEDs and 4 digital inputs on terminal blocks
+ * Provides communication between ground propulsion command center and remote test setup.
+ * Communicates with DAQ board via UART
+ * Communicates with ground propulsion command center via radio, 433 MHz
+ * Has 2 configurable LEDs
  *
  * LEDS:
  *  - Rx (PB12)
  *  - Tx (PB13)
- *
- * Digital Inputs:
- *  - IO 1 (PB5)
- *  - IO 2 (PB6)
- *  - IO 3 (PB8) // NOTE: only usable on v3.1+
- *  - IO 4 (PB7)
  */
 
 /***************Includes**********************/
@@ -39,9 +33,6 @@ using namespace Calstar;
 /****************Defines**********************/
 #define ENCRYPT_KEY ("CALSTARENCRYPTKE")
 
-#define COMMAND_YES_RETRY ("![YES_RETRY]!")
-#define COMMAND_NO_RETRY ("![NO_RETRY]!")
-
 #define LED_ON_TIME_MS (50)
 
 #define RX_BUF_LEN (256)
@@ -51,17 +42,14 @@ using namespace Calstar;
 #define ACK_CHECK_INTERVAL_MS (200)
 #define MAX_NUM_RETRIES (50)
 
+#define DAQ_BAUDRATE (9600)
+
 /****************Global Variables***************/
 DigitalOut rx_led(LED_RX);
 DigitalOut tx_led(LED_TX);
-DigitalOut tx_lock(IO2); // using for tx lock led
-DigitalIn io1(IO1);
-// DigitalIn io2(IO2);
-DigitalIn io3(IO3);
-DigitalIn io4(IO4);
 Timer t;
 
-USBSerial pc;
+UARTSerial daq(DEBUG_TX, DEBUG_RX, DAQ_BAUDRATE);
 
 uint8_t rx_buf[RX_BUF_LEN];
 RFM69 radio(SPI1_MOSI, SPI1_MISO, SPI1_SCLK, SPI1_SSEL, RADIO_RST, true);
@@ -83,15 +71,11 @@ FlatBufferBuilder builder(FLATBUF_BUF_SIZE);
 /***************Function Declarations***********/
 void start();
 void loop();
-bool sendPropUplinkMsg(const std::string &str, bool with_ack);
-const PropDownlinkMsg *getPropDownlinkMsgChar(char c);
+bool sendPropDownlinkMsg(const std::string &str, bool with_ack);
+const PropUplinkMsg *getUplinkMsgChar(char c);
 void resend_msgs();
 void sendAck(uint8_t frame_id);
 void radioTx(const uint8_t *const data, const int32_t data_len);
-
-bool validServoCmd(const std::string &str);
-bool validIgnitionOffCmd(const std::string &str);
-bool validIgnitionCmd(const std::string &str);
 
 int main() {
     start();
@@ -104,10 +88,8 @@ int main() {
 void start() {
     rx_led = 0;
     tx_led = 0;
-    tx_lock = 0;
 
     radio.reset();
-    pc.printf("{\"status\":\"radio reset\"}\r\n");
 
     radio.init();
     radio.setAESEncryption(ENCRYPT_KEY, strlen(ENCRYPT_KEY));
@@ -139,27 +121,18 @@ void loop() {
     if (rx_led.read() == 1 && t.read_ms() - t_rx_led_on > LED_ON_TIME_MS) {
         rx_led = 0;
     }
-    tx_lock = io1 ? 0 : 1;
 
     if (pc.readable()) {
         const char in = pc.getc();
         if (in == '\n') {
-            if (line == COMMAND_YES_RETRY) {
-                retry = true;
-                pc.printf("{\"status\":\"retry on\"}\r\n");
-            } else if (line == COMMAND_NO_RETRY) {
-                retry = false;
-                pc.printf("{\"status\":\"retry off\"}\r\n");
+            if (retry) {
+                tx_led = 1;
+                sendPropUplinkMsg(line, true);
+                t_tx_led_on = t.read_ms();
             } else {
-                if (retry) {
-                    tx_led = 1;
-                    sendPropUplinkMsg(line, true);
-                    t_tx_led_on = t.read_ms();
-                } else {
-                    tx_led = 1;
-                    sendPropUplinkMsg(line, false);
-                    t_tx_led_on = t.read_ms();
-                }
+                tx_led = 1;
+                sendPropUplinkMsg(line, false);
+                t_tx_led_on = t.read_ms();
             }
             line = "";
         } else {
@@ -190,61 +163,61 @@ void loop() {
     }
 }
 
-bool sendPropUplinkMsg(const std::string &str, bool with_ack) {
-    builder.Reset();
+// bool sendPropDownlinkMsg(const std::string &str, bool with_ack) {
+//     builder.Reset();
 
-    PropUplinkType type;
-    uint8_t servos[3];
-    if (validServoCmd(str)) {
-        type = PropUplinkType_Servos;
-        servos[0] = (uint8_t)std::stoi(str.substr(1,3));
-        servos[1] = (uint8_t)std::stoi(str.substr(5,3));
-        servos[2] = (uint8_t)std::stoi(str.substr(9,3));
-        pc.printf("{\"status\":\"sending servo command (%d,%d,%d)\"}\r\n", servos[0], servos[1], servos[2]);
-    } else if (validIgnitionOffCmd(str)) {
-        type = PropUplinkType_IgnitionOff;
-        pc.printf("{\"status\":\"sending ignition off command\r\n");
-    } else if (validIgnitionCmd(str)) {
-        if (!io1) {
-            // Button is active-low, so it's currently pressed and we can send ignition
-            type = PropUplinkType_Ignition;
-            pc.printf("{\"status\":\"sending ignition pulse command\r\n");
-        } else {
-            // Button not pressed
-            pc.printf("{\"status\":\"transmission of ignition command is locked\"}\r\n");
-            return false;
-        }
-    } else {
-        pc.printf("{\"status\":\"'%s' invalid\"}\r\n", str.c_str());
-        return false;
-    }
+//     PropUplinkType type;
+//     uint8_t servos[3];
+//     if (validServoCmd(str)) {
+//         type = PropUplinkType_Servos;
+//         servos[0] = (uint8_t)std::stoi(str.substr(1,3));
+//         servos[1] = (uint8_t)std::stoi(str.substr(5,3));
+//         servos[2] = (uint8_t)std::stoi(str.substr(9,3));
+//         pc.printf("{\"status\":\"sending servo command (%d,%d,%d)\"}\r\n", servos[0], servos[1], servos[2]);
+//     } else if (validIgnitionOffCmd(str)) {
+//         type = PropUplinkType_IgnitionOff;
+//         pc.printf("{\"status\":\"sending ignition off command\r\n");
+//     } else if (validIgnitionCmd(str)) {
+//         if (!io1) {
+//             // Button is active-low, so it's currently pressed and we can send ignition
+//             type = PropUplinkType_Ignition;
+//             pc.printf("{\"status\":\"sending ignition pulse command\r\n");
+//         } else {
+//             // Button not pressed
+//             pc.printf("{\"status\":\"transmission of ignition command is locked\"}\r\n");
+//             return false;
+//         }
+//     } else {
+//         pc.printf("{\"status\":\"'%s' invalid\"}\r\n", str.c_str());
+//         return false;
+//     }
 
-    auto servos_offset = type == PropUplinkType_Servos ? builder.CreateVector(servos, sizeof(servos)) : 0;
+//     auto servos_offset = type == PropUplinkType_Servos ? builder.CreateVector(servos, sizeof(servos)) : 0;
 
-    Offset<PropUplinkMsg> msg = CreatePropUplinkMsg(builder, 1, frame_id, with_ack, type, servos_offset);
-    builder.Finish(msg);
+//     Offset<PropUplinkMsg> msg = CreatePropUplinkMsg(builder, 1, frame_id, with_ack, type, servos_offset);
+//     builder.Finish(msg);
 
-    const uint8_t bytes = (uint8_t)builder.GetSize();
-    builder.Reset();
-    servos_offset = type == PropUplinkType_Servos ? builder.CreateVector(servos, sizeof(servos)) : 0;
-    msg = CreatePropUplinkMsg(builder, bytes, frame_id, with_ack, type, servos_offset);
-    builder.Finish(msg);
+//     const uint8_t bytes = (uint8_t)builder.GetSize();
+//     builder.Reset();
+//     servos_offset = type == PropUplinkType_Servos ? builder.CreateVector(servos, sizeof(servos)) : 0;
+//     msg = CreatePropUplinkMsg(builder, bytes, frame_id, with_ack, type, servos_offset);
+//     builder.Finish(msg);
 
-    const uint8_t *buf = builder.GetBufferPointer();
-    const int32_t size = builder.GetSize();
+//     const uint8_t *buf = builder.GetBufferPointer();
+//     const int32_t size = builder.GetSize();
 
-    if (with_ack) {
-        acks_remaining.insert({frame_id, {std::vector<uint8_t>(buf, buf + size), 0}});
-    }
-    radioTx(buf, size);
+//     if (with_ack) {
+//         acks_remaining.insert({frame_id, {std::vector<uint8_t>(buf, buf + size), 0}});
+//     }
+//     radioTx(buf, size);
 
-    ++frame_id;
+//     ++frame_id;
 
-    return true;
-}
+//     return true;
+// }
 
 uint8_t ret_buf[FLATBUF_BUF_SIZE];
-const PropDownlinkMsg *getPropDownlinkMsgChar(char c) {
+const PropUplinkMsg *getPropUplinkMsgChar(char c) {
     static uint8_t buffer[FLATBUF_BUF_SIZE];
     static unsigned int len = 0;
 
@@ -265,8 +238,8 @@ const PropDownlinkMsg *getPropDownlinkMsgChar(char c) {
     // message says it should be, and actually process a message of THAT
     // size.
     Verifier verifier(buffer, len);
-    if (VerifyPropDownlinkMsgBuffer(verifier)) {
-        const PropDownlinkMsg *msg = GetPropDownlinkMsg(buffer);
+    if (VerifyPropUplinkMsgBuffer(verifier)) {
+        const PropUplinkMsg *msg = GetPropUplinkMsg(buffer);
         // The message knows how big it should be
         const uint8_t expectedBytes = msg->Bytes();
 
@@ -282,7 +255,7 @@ const PropDownlinkMsg *getPropDownlinkMsgChar(char c) {
             // actually a message in its own right (just a double
             // check basically)
             Verifier smallerVerifier(buffer, expectedBytes);
-            if (VerifyPropDownlinkMsgBuffer(smallerVerifier)) {
+            if (VerifyPropUplinkMsgBuffer(smallerVerifier)) {
                 // If it is a message, then make sure we use the
                 // correct (smaller) length
                 actual_len = expectedBytes;
@@ -306,7 +279,7 @@ const PropDownlinkMsg *getPropDownlinkMsgChar(char c) {
         // Clear the rest of the buffer
         memset(buffer + len, 0, FLATBUF_BUF_SIZE - len);
 
-        return GetPropDownlinkMsg(ret_buf);
+        return GetPropUplinkMsg(ret_buf);
     }
     return nullptr;
 }
@@ -329,11 +302,11 @@ void resend_msgs() {
 
 void sendAck(uint8_t frame_id) {
     builder.Reset();
-    Offset<PropUplinkMsg> ack = CreatePropUplinkMsg(builder, 1, frame_id, false, PropUplinkType_Ack, 0);
+    Offset<PropUplinkMsg> ack = CreatePropDownlinkMsg(builder, 1, frame_id, false, PropDownlinkType_Ack, 0, 0, 0, 0, 0);
     builder.Finish(ack);
     const uint8_t bytes = builder.GetSize();
     builder.Reset();
-    ack = CreatePropUplinkMsg(builder, bytes, frame_id, false, PropUplinkType_Ack, 0);
+    ack = CreatePropUplinkMsg(builder, bytes, frame_id, false, PropDownlinkType_Ack, 0, 0, 0, 0, 0);
     builder.Finish(ack);
     radioTx(builder.GetBufferPointer(), builder.GetSize());
 }
@@ -342,21 +315,4 @@ void sendAck(uint8_t frame_id) {
 void radioTx(const uint8_t *const data, const int32_t data_len) {
     radio.send(data, data_len);
     pc.printf("{\"status\":\"Sending %d bytes\"}\r\n", data_len);
-}
-
-bool validServoCmd(const std::string &str) {
-    // Expects "a###b###c###", where all three numbers are between 0 and 180, inclusive
-    if (str.length() != 12) return false;
-    if (str[0] != 'a' || str[4] != 'b' || str[8] != 'c') return false;
-    if (std::stoi(str.substr(1,3)) < 0 || std::stoi(str.substr(1,3)) > 180) return false;
-    if (std::stoi(str.substr(5,3)) < 0 || std::stoi(str.substr(5,3)) > 180) return false;
-    if (std::stoi(str.substr(9,3)) < 0 || std::stoi(str.substr(9,3)) > 180) return false;
-    return true;
-}
-bool validIgnitionOffCmd(const std::string &str) {
-    // Expects "off"
-    return str == "off";
-}
-bool validIgnitionCmd(const std::string &str) {
-    return str == "ignite";
 }
