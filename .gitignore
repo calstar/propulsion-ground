@@ -1,0 +1,26 @@
+.DS_Store
+~*~
+.vs/
+.vscode/
+obj/
+out/
+
+*.swp
+*_generated.h
+
+BUILD/
+mbed_settings.pyc
+
+# Compiiled output
+*.d
+*.hex
+*.eep
+*.obj
+*.cof
+*.elf
+*.map
+*.a90
+*.sym
+*.lnk
+*.lss
+*.lst

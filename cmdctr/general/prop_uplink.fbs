@@ -1,0 +1,14 @@
+namespace Calstar;
+
+/* This is both over Radio and RS422 */
+
+enum PropUplinkType : byte { Servos = 0, IgnitionOff = 1, Ignition = 3, Ack = 4}
+table PropUplinkMsg {
+    Bytes : uint8;
+    Type : PropUplinkType;
+    Servos : [uint8];
+    FrameID : uint8;
+    AckReqd : bool;
+}
+
+root_type PropUplinkMsg;
