@@ -348,9 +348,15 @@ bool validServoCmd(const std::string &str) {
     // Expects "a###b###c###", where all three numbers are between 0 and 180, inclusive
     if (str.length() != 12) return false;
     if (str[0] != 'a' || str[4] != 'b' || str[8] != 'c') return false;
-    if (std::stoi(str.substr(1,3)) < 0 || std::stoi(str.substr(1,3)) > 180) return false;
-    if (std::stoi(str.substr(5,3)) < 0 || std::stoi(str.substr(5,3)) > 180) return false;
-    if (std::stoi(str.substr(9,3)) < 0 || std::stoi(str.substr(9,3)) > 180) return false;
+    int a = std::stoi(str.substr(1,3));
+    int b = std::stoi(str.substr(5,3));
+    int c = std::stoi(str.substr(9,3));
+    // We need to make sure that the servo angles are between 0 and 180
+    // But if we read a 0, that could have just been a stoi failure
+    // So if we read 0, make sure the text is actually just "000"
+    if (a < 0 || a > 180 || (a == 0 && str.substr(1,3) != "000")) return false;
+    if (b < 0 || b > 180 || (b == 0 && str.substr(5,3) != "000")) return false;
+    if (b < 0 || b > 180 || (b == 0 && str.substr(9,3) != "000")) return false;
     return true;
 }
 bool validIgnitionOffCmd(const std::string &str) {
@@ -358,5 +364,6 @@ bool validIgnitionOffCmd(const std::string &str) {
     return str == "off";
 }
 bool validIgnitionCmd(const std::string &str) {
+    // Expects "ignite"
     return str == "ignite";
 }

@@ -49,7 +49,8 @@ DigitalOut rx_led(LED_RX);
 DigitalOut tx_led(LED_TX);
 Timer t;
 
-UARTSerial daq(DEBUG_TX, DEBUG_RX, DAQ_BAUDRATE);
+Serial daq(DEBUG_TX, DEBUG_RX, DAQ_BAUDRATE);
+USBSerial pc;
 
 uint8_t rx_buf[RX_BUF_LEN];
 RFM69 radio(SPI1_MOSI, SPI1_MISO, SPI1_SCLK, SPI1_SSEL, RADIO_RST, true);
@@ -72,7 +73,7 @@ FlatBufferBuilder builder(FLATBUF_BUF_SIZE);
 void start();
 void loop();
 bool sendPropDownlinkMsg(const std::string &str, bool with_ack);
-const PropUplinkMsg *getUplinkMsgChar(char c);
+const PropUplinkMsg *getPropUplinkMsgChar(char c);
 void resend_msgs();
 void sendAck(uint8_t frame_id);
 void radioTx(const uint8_t *const data, const int32_t data_len);
@@ -104,10 +105,6 @@ void start() {
     frame_id = 0;
 
     t_last_resend = t.read_ms();
-
-    // Input button set to internal pull-up
-    // It is now active low
-    io1.mode(PullUp);
 }
 
 void loop() {
@@ -122,18 +119,23 @@ void loop() {
         rx_led = 0;
     }
 
-    if (pc.readable()) {
-        const char in = pc.getc();
+    if (daq.readable()) {
+        const char in = daq.getc();
         if (in == '\n') {
-            if (retry) {
-                tx_led = 1;
-                sendPropUplinkMsg(line, true);
-                t_tx_led_on = t.read_ms();
-            } else {
-                tx_led = 1;
-                sendPropUplinkMsg(line, false);
-                t_tx_led_on = t.read_ms();
+            // if (retry) {
+            //     tx_led = 1;
+            //     // sendPropUplinkMsg(line, true);
+            //     t_tx_led_on = t.read_ms();
+            // } else {
+            //     tx_led = 1;
+            //     // sendPropUplinkMsg(line, false);
+            //     t_tx_led_on = t.read_ms();
+            // }
+            if (line[line.length()-1] == '\r') {
+                // Remove \r before printing
+                line = line.substr(0, line.length()-1);
             }
+            pc.printf("Read from DAQ: \"%s\"\r\n", line.c_str());
             line = "";
         } else {
             line += in;
@@ -146,14 +148,32 @@ void loop() {
         rx_led = 1;
         t_rx_led_on = t.read_ms();
         for (int32_t i = 0; i < num_bytes_rxd - 1; ++i) {
-            const PropDownlinkMsg *msg = getPropDownlinkMsgChar(rx_buf[i + 1]);
+            const PropUplinkMsg *msg = getPropUplinkMsgChar(rx_buf[i + 1]);
             if (msg != nullptr) {
-                if (msg->Type() == PropDownlinkType_Ack) {
+                if (msg->Type() == PropUplinkType_Ack) {
                     if (acks_remaining.count(msg->FrameID()) == 1) {
                         acks_remaining.erase(msg->FrameID());
                     }
-                } else if (msg->Type() == PropDownlinkType_StateUpdate) {
-
+                } else if (msg->Type() == PropUplinkType_Servos) {
+                    pc.printf("Received servo command");
+                    const Vector<uint8_t>* servos = msg->Servos();
+                    if (servos->size() >= 3) {
+                        int a = servos->Get(0);
+                        int b = servos->Get(1);
+                        int c = servos->Get(2);
+                        pc.printf(" with a=%03d,b=%03d,c=%03d", a, b, c);
+                        // Print numbers zero-padded to 3 digits
+                        daq.printf("a%03db%03dc%03d\n", a, b, c);
+                    } else {
+                        pc.printf(" (size != 3)");
+                    }
+                    pc.printf("\r\n");
+                } else if (msg->Type() == PropUplinkType_IgnitionOff) {
+                    pc.printf("Received off command\r\n");
+                    daq.printf("off\n");
+                } else if (msg->Type() == PropUplinkType_Ignition) {
+                    pc.printf("Received ignite command\r\n");
+                    daq.printf("ignite\n");
                 }
                 if (msg->AckReqd()) {
                     sendAck(msg->FrameID());
@@ -163,58 +183,45 @@ void loop() {
     }
 }
 
-// bool sendPropDownlinkMsg(const std::string &str, bool with_ack) {
-//     builder.Reset();
+bool sendPropDownlinkMsg(const std::string &str, bool with_ack) {
+    builder.Reset();
 
-//     PropUplinkType type;
-//     uint8_t servos[3];
-//     if (validServoCmd(str)) {
-//         type = PropUplinkType_Servos;
-//         servos[0] = (uint8_t)std::stoi(str.substr(1,3));
-//         servos[1] = (uint8_t)std::stoi(str.substr(5,3));
-//         servos[2] = (uint8_t)std::stoi(str.substr(9,3));
-//         pc.printf("{\"status\":\"sending servo command (%d,%d,%d)\"}\r\n", servos[0], servos[1], servos[2]);
-//     } else if (validIgnitionOffCmd(str)) {
-//         type = PropUplinkType_IgnitionOff;
-//         pc.printf("{\"status\":\"sending ignition off command\r\n");
-//     } else if (validIgnitionCmd(str)) {
-//         if (!io1) {
-//             // Button is active-low, so it's currently pressed and we can send ignition
-//             type = PropUplinkType_Ignition;
-//             pc.printf("{\"status\":\"sending ignition pulse command\r\n");
-//         } else {
-//             // Button not pressed
-//             pc.printf("{\"status\":\"transmission of ignition command is locked\"}\r\n");
-//             return false;
-//         }
-//     } else {
-//         pc.printf("{\"status\":\"'%s' invalid\"}\r\n", str.c_str());
-//         return false;
-//     }
+    PropDownlinkType type = PropDownlinkType_StateUpdate;
+    float loadCell = 0;
+    uint8_t servos[3] = {0, 0, 0};
+    uint16_t thermocouples[3] = {0, 0, 0};
+    bool flowSwitch = false;
+    uint16_t pressureTransducers[1] = {0};
 
-//     auto servos_offset = type == PropUplinkType_Servos ? builder.CreateVector(servos, sizeof(servos)) : 0;
+    auto servos_offset = builder.CreateVector(servos, sizeof(servos));
+    auto thermocouples_offset = builder.CreateVector(thermocouples, sizeof(thermocouples));
+    auto pressureTransducers_offset = builder.CreateVector(pressureTransducers, sizeof(pressureTransducers));
+    
+    Offset<PropDownlinkMsg> msg = CreatePropDownlinkMsg(builder, 1, frame_id, with_ack, type,
+        loadCell, servos_offset, thermocouples_offset, flowSwitch, pressureTransducers_offset);
+    builder.Finish(msg);
 
-//     Offset<PropUplinkMsg> msg = CreatePropUplinkMsg(builder, 1, frame_id, with_ack, type, servos_offset);
-//     builder.Finish(msg);
+    const uint8_t bytes = (uint8_t)builder.GetSize();
+    builder.Reset();
+    servos_offset = builder.CreateVector(servos, sizeof(servos));
+    thermocouples_offset = builder.CreateVector(thermocouples, sizeof(thermocouples));
+    pressureTransducers_offset = builder.CreateVector(pressureTransducers, sizeof(pressureTransducers));
+    CreatePropDownlinkMsg(builder, bytes, frame_id, with_ack, type,
+        loadCell, servos_offset, thermocouples_offset, flowSwitch, pressureTransducers_offset);
+    builder.Finish(msg);
 
-//     const uint8_t bytes = (uint8_t)builder.GetSize();
-//     builder.Reset();
-//     servos_offset = type == PropUplinkType_Servos ? builder.CreateVector(servos, sizeof(servos)) : 0;
-//     msg = CreatePropUplinkMsg(builder, bytes, frame_id, with_ack, type, servos_offset);
-//     builder.Finish(msg);
+    const uint8_t *buf = builder.GetBufferPointer();
+    const int32_t size = builder.GetSize();
 
-//     const uint8_t *buf = builder.GetBufferPointer();
-//     const int32_t size = builder.GetSize();
+    if (with_ack) {
+        acks_remaining.insert({frame_id, {std::vector<uint8_t>(buf, buf + size), 0}});
+    }
+    radioTx(buf, size);
 
-//     if (with_ack) {
-//         acks_remaining.insert({frame_id, {std::vector<uint8_t>(buf, buf + size), 0}});
-//     }
-//     radioTx(buf, size);
+    ++frame_id;
 
-//     ++frame_id;
-
-//     return true;
-// }
+    return true;
+}
 
 uint8_t ret_buf[FLATBUF_BUF_SIZE];
 const PropUplinkMsg *getPropUplinkMsgChar(char c) {
@@ -291,7 +298,6 @@ void resend_msgs() {
         radioTx(vec.data(), vec.size());
         std::get<1>(msg.second) = std::get<1>(msg.second) + 1;
         if (std::get<1>(msg.second) >= MAX_NUM_RETRIES) {
-            pc.printf("{\"status\":\"Failed to send frame: Exceeded max number of retries.\"}\r\n");
             acks_remaining.erase(msg.first);
         }
     }
@@ -302,11 +308,11 @@ void resend_msgs() {
 
 void sendAck(uint8_t frame_id) {
     builder.Reset();
-    Offset<PropUplinkMsg> ack = CreatePropDownlinkMsg(builder, 1, frame_id, false, PropDownlinkType_Ack, 0, 0, 0, 0, 0);
+    Offset<PropDownlinkMsg> ack = CreatePropDownlinkMsg(builder, 1, frame_id, false, PropDownlinkType_Ack, 0, 0, 0, false, 0);
     builder.Finish(ack);
     const uint8_t bytes = builder.GetSize();
     builder.Reset();
-    ack = CreatePropUplinkMsg(builder, bytes, frame_id, false, PropDownlinkType_Ack, 0, 0, 0, 0, 0);
+    ack = CreatePropDownlinkMsg(builder, bytes, frame_id, false, PropDownlinkType_Ack, 0, 0, 0, false, 0);
     builder.Finish(ack);
     radioTx(builder.GetBufferPointer(), builder.GetSize());
 }
@@ -314,5 +320,4 @@ void sendAck(uint8_t frame_id) {
 
 void radioTx(const uint8_t *const data, const int32_t data_len) {
     radio.send(data, data_len);
-    pc.printf("{\"status\":\"Sending %d bytes\"}\r\n", data_len);
 }
