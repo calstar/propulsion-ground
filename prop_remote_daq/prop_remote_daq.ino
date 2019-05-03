@@ -11,6 +11,8 @@ Servo servo3;
 #define SERVO3_PIN (11)
 #define IGNITION_PIN (7)
 #define IGNITION_TIME_MS (1000)
+#define STATE_UPDATE_INTERVAL_MS (500)
+#define FS_PIN (A4)
 
 bool doServoCmd(String);
 bool doIgnitionOffCmd(String);
@@ -18,13 +20,17 @@ bool doIgniteCmd(String);
 
 String buffer;
 bool servosAttached;
+unsigned long lastStateUpdateTime_ms;
 void setup() {
     Serial.begin(9600);
     pinMode(IGNITION_PIN, OUTPUT);
     digitalWrite(IGNITION_PIN, 0);
+    pinMode(FS_PIN, INPUT);
 
     buffer = "";
     servosAttached = false;
+
+    lastStateUpdateTime_ms = 0;
 }
 void loop() {
     if (Serial.available() > 0) {
@@ -38,6 +44,17 @@ void loop() {
             else if (doIgnitionOffCmd(line)) { }
             else { doIgniteCmd(line); }
         }
+    }
+
+    unsigned long currentTime_ms = millis();
+    if (currentTime_ms >= lastStateUpdateTime_ms + STATE_UPDATE_INTERVAL_MS) {
+        // Time to send a state update!
+        bool flowSwitch = !digitalRead(FS_PIN); // active low
+        Serial.print("u:");
+        if (flowSwitch) Serial.print("t"); else Serial.print("f");
+        Serial.print(".\r\n");
+
+        lastStateUpdateTime_ms = currentTime_ms;
     }
 }
 
@@ -65,14 +82,9 @@ bool doServoCmd(String str) {
     servo2.write(b);
     servo3.write(c);
 
-    Serial.print("Servos set to ");
-    Serial.print(a);
-    Serial.print(" ");
-    Serial.print(b);
-    Serial.print(" ");
-    Serial.print(c);
-    Serial.print("\r\n");
-    Serial.flush();
+    char output[17]; // s.a###b###c###\r\n\0 = 12+5 chars
+    snprintf(output, sizeof(output), "s:a%03db%03dc%03d.\r\n", a, b, c);
+    Serial.print(output);
 
     return true;
 }
@@ -80,7 +92,7 @@ bool doIgnitionOffCmd(String str) {
     // Expects "off"
     if (str == "off") {
         digitalWrite(IGNITION_PIN, 0);
-        Serial.print("Turned off.\r\n");
+        Serial.print("o.\r\n");
         Serial.flush();
         return true;
     }
@@ -89,11 +101,11 @@ bool doIgnitionOffCmd(String str) {
 bool doIgniteCmd(String str) {
     // Expects "ignite"
     if (str == "ignite") {
-        Serial.print("Igniting!..."); Serial.flush();
+        Serial.print("i.\r\n"); Serial.flush();
         digitalWrite(IGNITION_PIN, 1);
         delay(IGNITION_TIME_MS);
         digitalWrite(IGNITION_PIN, 0);
-        Serial.print(" done.\r\n"); Serial.flush();
+        Serial.print("d.\r\n"); Serial.flush();
         return true;
     }
     return false;
