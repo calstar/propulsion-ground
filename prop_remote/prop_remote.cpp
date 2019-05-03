@@ -56,7 +56,6 @@ uint8_t rx_buf[RX_BUF_LEN];
 RFM69 radio(SPI1_MOSI, SPI1_MISO, SPI1_SCLK, SPI1_SSEL, RADIO_RST, true);
 
 std::string line = "";
-bool retry = true;
 
 int32_t t_tx_led_on;
 int32_t t_rx_led_on;
@@ -69,10 +68,17 @@ std::unordered_map<uint8_t, std::pair<std::vector<uint8_t>, uint8_t>> acks_remai
 
 FlatBufferBuilder builder(FLATBUF_BUF_SIZE);
 
+bool igniting = false;
+float loadCell = 0;
+uint8_t servos[3] = {0,0,0};
+uint16_t thermocouples[3] = {0, 0, 0};
+bool flowSwitch = false;
+uint16_t pressureTransducers[1] = {0};
+
 /***************Function Declarations***********/
 void start();
 void loop();
-bool sendPropDownlinkMsg(const std::string &str, bool with_ack);
+bool sendPropDownlinkMsg(bool with_ack);
 const PropUplinkMsg *getPropUplinkMsgChar(char c);
 void resend_msgs();
 void sendAck(uint8_t frame_id);
@@ -122,20 +128,67 @@ void loop() {
     if (daq.readable()) {
         const char in = daq.getc();
         if (in == '\n') {
-            // if (retry) {
-            //     tx_led = 1;
-            //     // sendPropUplinkMsg(line, true);
-            //     t_tx_led_on = t.read_ms();
-            // } else {
-            //     tx_led = 1;
-            //     // sendPropUplinkMsg(line, false);
-            //     t_tx_led_on = t.read_ms();
-            // }
             if (line[line.length()-1] == '\r') {
                 // Remove \r before printing
                 line = line.substr(0, line.length()-1);
             }
             pc.printf("Read from DAQ: \"%s\"\r\n", line.c_str());
+
+            // Format:
+            // s:a###b###c###.  = servos(a,b,c)
+            // o.               = igniter off
+            // i.               = igniting
+            // d.               = done igniting
+            // u:$.             = update(flowswitch)
+            bool dataOk = true;
+            bool retry = false;
+            if ((line[0] == 's' || line[0] == 'o' || line[0] == 'i' || line[0] == 'd' || line[0] == 'u') && line[line.length()-1] == '.') {
+                if (line[0] == 's' && line[1] == ':' && line[2] == 'a' && line[6] == 'b' && line[10] == 'c') {
+                    // check if there are numbers in there
+                    int a = std::stoi(line.substr(3, 3));
+                    int b = std::stoi(line.substr(7, 3));
+                    int c = std::stoi(line.substr(11,3));
+                    // We need to make sure that the servo angles are between 0 and 180
+                    // But if we read a 0, that could have just been a stoi failure
+                    // So if we read 0, make sure the text is actually just "000"
+                    if (a < 0 || a > 180 || (a == 0 && line.substr(3, 3) != "000")) dataOk = false;
+                    if (b < 0 || b > 180 || (b == 0 && line.substr(7, 3) != "000")) dataOk = false;
+                    if (b < 0 || b > 180 || (b == 0 && line.substr(11,3) != "000")) dataOk = false;
+                    
+                    if (dataOk) {
+                        servos[0] = (uint8_t)a;
+                        servos[1] = (uint8_t)b;
+                        servos[2] = (uint8_t)c;
+                        retry = true;
+                    }
+                } else if (line == "o.") {
+                    igniting = false;
+                    retry = true;
+                } else if (line == "i.") {
+                    igniting = true;
+                    retry = true;
+                } else if (line == "d.") {
+                    igniting = false;
+                    retry = true;
+                } else if (line[0] == 'u' && line[1] == ':') {
+                    // Check fields
+                    bool fs;
+                    if (line[2] == 't' || line[2] == 'f') { 
+                        fs = line[2] == 't';
+                    } else {
+                        dataOk = false;
+                    }
+                    // TODO: additional fields
+                    if (dataOk) {
+                        flowSwitch = fs;
+                    }
+                }
+            } else {
+                dataOk = false;
+            }
+
+            sendPropDownlinkMsg(retry);
+
             line = "";
         } else {
             line += in;
@@ -183,22 +236,17 @@ void loop() {
     }
 }
 
-bool sendPropDownlinkMsg(const std::string &str, bool with_ack) {
+bool sendPropDownlinkMsg(bool with_ack) {
     builder.Reset();
 
     PropDownlinkType type = PropDownlinkType_StateUpdate;
-    float loadCell = 0;
-    uint8_t servos[3] = {0, 0, 0};
-    uint16_t thermocouples[3] = {0, 0, 0};
-    bool flowSwitch = false;
-    uint16_t pressureTransducers[1] = {0};
 
     auto servos_offset = builder.CreateVector(servos, sizeof(servos));
     auto thermocouples_offset = builder.CreateVector(thermocouples, sizeof(thermocouples));
     auto pressureTransducers_offset = builder.CreateVector(pressureTransducers, sizeof(pressureTransducers));
     
     Offset<PropDownlinkMsg> msg = CreatePropDownlinkMsg(builder, 1, frame_id, with_ack, type,
-        loadCell, servos_offset, thermocouples_offset, flowSwitch, pressureTransducers_offset);
+        igniting, loadCell, servos_offset, thermocouples_offset, flowSwitch, pressureTransducers_offset);
     builder.Finish(msg);
 
     const uint8_t bytes = (uint8_t)builder.GetSize();
@@ -207,7 +255,7 @@ bool sendPropDownlinkMsg(const std::string &str, bool with_ack) {
     thermocouples_offset = builder.CreateVector(thermocouples, sizeof(thermocouples));
     pressureTransducers_offset = builder.CreateVector(pressureTransducers, sizeof(pressureTransducers));
     CreatePropDownlinkMsg(builder, bytes, frame_id, with_ack, type,
-        loadCell, servos_offset, thermocouples_offset, flowSwitch, pressureTransducers_offset);
+        igniting, loadCell, servos_offset, thermocouples_offset, flowSwitch, pressureTransducers_offset);
     builder.Finish(msg);
 
     const uint8_t *buf = builder.GetBufferPointer();

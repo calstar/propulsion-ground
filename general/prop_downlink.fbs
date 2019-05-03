@@ -6,6 +6,7 @@ table PropDownlinkMsg {
     FrameID : uint8;
     AckReqd : bool;
     Type : PropDownlinkType;
+    Igniting: bool;
     LoadCell: float;
     Servos: [uint8];
     Thermocouples: [uint16];
