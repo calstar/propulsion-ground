@@ -10,6 +10,7 @@ Servo servo3;
 #define SERVO2_PIN (9)
 #define SERVO3_PIN (11)
 #define IGNITION_PIN (7)
+#define IGNITION_TIME_MS (1000)
 
 bool doServoCmd(String);
 bool doIgnitionOffCmd(String);
@@ -88,19 +89,11 @@ bool doIgnitionOffCmd(String str) {
 bool doIgniteCmd(String str) {
     // Expects "ignite"
     if (str == "ignite") {
-        Serial.print("Igniting in 3... "); Serial.flush();
-        delay(1000);
-        Serial.print("2... "); Serial.flush();
-        delay(1000);
-        Serial.print("1... "); Serial.flush();
-        delay(1000);
-        Serial.print("igniting!."); Serial.flush();
+        Serial.print("Igniting!..."); Serial.flush();
         digitalWrite(IGNITION_PIN, 1);
-        delay(100);
-        Serial.print("."); Serial.flush();
-        delay(100);
+        delay(IGNITION_TIME_MS);
         digitalWrite(IGNITION_PIN, 0);
-        Serial.print(". done.\r\n"); Serial.flush();
+        Serial.print(" done.\r\n"); Serial.flush();
         return true;
     }
     return false;
