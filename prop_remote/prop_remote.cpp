@@ -44,21 +44,22 @@ using namespace Calstar;
 
 #define DAQ_BAUDRATE (9600)
 
+#define BUF_SIZE (256)
+#define RADIO_SEND_INTERVAL_US (100000u) // 100*1000us = 100ms
+
 /****************Global Variables***************/
-DigitalOut rx_led(LED_RX);
-DigitalOut tx_led(LED_TX);
 Timer t;
 
 Serial daq(DEBUG_TX, DEBUG_RX, DAQ_BAUDRATE);
+#ifndef NO_PRINTS
 USBSerial pc;
+#endif
 
 uint8_t rx_buf[RX_BUF_LEN];
 RFM69 radio(SPI1_MOSI, SPI1_MISO, SPI1_SCLK, SPI1_SSEL, RADIO_RST, true);
 
 std::string line = "";
 
-int32_t t_tx_led_on;
-int32_t t_rx_led_on;
 int32_t t_last_resend;
 
 uint8_t frame_id;
@@ -71,9 +72,14 @@ FlatBufferBuilder builder(FLATBUF_BUF_SIZE);
 bool igniting = false;
 float loadCell = 0;
 uint8_t servos[3] = {0,0,0};
-uint16_t thermocouples[3] = {0, 0, 0};
+uint16_t thermocouples[3] = {123, 456, 789};
 bool flowSwitch = false;
-uint16_t pressureTransducers[1] = {0};
+uint16_t pressureTransducers[1] = {42069};
+
+uint8_t remaining_send_buf[BUF_SIZE];
+int remaining_send_size = 0;
+int remaining_send_buf_start = 0;
+us_timestamp_t last_radio_send_us;
 
 /***************Function Declarations***********/
 void start();
@@ -93,9 +99,6 @@ int main() {
 }
 
 void start() {
-    rx_led = 0;
-    tx_led = 0;
-
     radio.reset();
 
     radio.init();
@@ -105,8 +108,6 @@ void start() {
     radio.setPowerDBm(20);
 
     t.start();
-    t_tx_led_on = t.read_ms();
-    t_rx_led_on = t.read_ms();
 
     frame_id = 0;
 
@@ -118,11 +119,17 @@ void loop() {
         resend_msgs();
         t_last_resend = t.read_ms();
     }
-    if (tx_led.read() == 1 && t.read_ms() - t_tx_led_on > LED_ON_TIME_MS) {
-        tx_led = 0;
-    }
-    if (rx_led.read() == 1 && t.read_ms() - t_rx_led_on > LED_ON_TIME_MS) {
-        rx_led = 0;
+    
+    us_timestamp_t current_time = t.read_high_resolution_us();
+    if (current_time >= last_radio_send_us + RADIO_SEND_INTERVAL_US && remaining_send_size > 0) {
+        // Send over radio
+        int bytesSent =
+            radio.send(remaining_send_buf + remaining_send_buf_start,
+                        remaining_send_size);
+        remaining_send_size -= bytesSent;
+        remaining_send_buf_start += bytesSent;
+
+        last_radio_send_us = current_time;
     }
 
     if (daq.readable()) {
@@ -132,7 +139,9 @@ void loop() {
                 // Remove \r before printing
                 line = line.substr(0, line.length()-1);
             }
+            #ifndef NO_PRINTS
             pc.printf("Read from DAQ: \"%s\"\r\n", line.c_str());
+            #endif
 
             // Format:
             // s:a###b###c###.  = servos(a,b,c)
@@ -153,23 +162,35 @@ void loop() {
                     // So if we read 0, make sure the text is actually just "000"
                     if (a < 0 || a > 180 || (a == 0 && line.substr(3, 3) != "000")) dataOk = false;
                     if (b < 0 || b > 180 || (b == 0 && line.substr(7, 3) != "000")) dataOk = false;
-                    if (b < 0 || b > 180 || (b == 0 && line.substr(11,3) != "000")) dataOk = false;
+                    if (c < 0 || c > 180 || (c == 0 && line.substr(11,3) != "000")) dataOk = false;
                     
                     if (dataOk) {
                         servos[0] = (uint8_t)a;
                         servos[1] = (uint8_t)b;
                         servos[2] = (uint8_t)c;
                         retry = true;
+                        #ifndef NO_PRINTS
+                        pc.printf("Sending downlink: servos(%03d,%03d,%03d)\r\n", a, b, c);
+                        #endif
                     }
                 } else if (line == "o.") {
                     igniting = false;
                     retry = true;
+                    #ifndef NO_PRINTS
+                    pc.printf("Sending downlink: ignition off\r\n");
+                    #endif
                 } else if (line == "i.") {
                     igniting = true;
                     retry = true;
+                    #ifndef NO_PRINTS
+                    pc.printf("Sending downlink: igniting\r\n");
+                    #endif
                 } else if (line == "d.") {
                     igniting = false;
                     retry = true;
+                    #ifndef NO_PRINTS
+                    pc.printf("Sending downlink: ignition done\r\n");
+                    #endif
                 } else if (line[0] == 'u' && line[1] == ':') {
                     // Check fields
                     bool fs;
@@ -181,13 +202,18 @@ void loop() {
                     // TODO: additional fields
                     if (dataOk) {
                         flowSwitch = fs;
+                        #ifndef NO_PRINTS
+                        pc.printf("Sending downlink: update(%d)\r\n", fs);
+                        #endif
                     }
                 }
             } else {
                 dataOk = false;
             }
 
-            sendPropDownlinkMsg(retry);
+            if (dataOk) {
+                sendPropDownlinkMsg(retry);
+            }
 
             line = "";
         } else {
@@ -198,8 +224,6 @@ void loop() {
     const int32_t num_bytes_rxd = radio.receive((char *)rx_buf, sizeof(rx_buf));
     if (num_bytes_rxd > 1) {
         rx_buf[num_bytes_rxd] = '\0';
-        rx_led = 1;
-        t_rx_led_on = t.read_ms();
         for (int32_t i = 0; i < num_bytes_rxd - 1; ++i) {
             const PropUplinkMsg *msg = getPropUplinkMsgChar(rx_buf[i + 1]);
             if (msg != nullptr) {
@@ -208,24 +232,36 @@ void loop() {
                         acks_remaining.erase(msg->FrameID());
                     }
                 } else if (msg->Type() == PropUplinkType_Servos) {
+                    #ifndef NO_PRINTS
                     pc.printf("Received servo command");
+                    #endif
                     const Vector<uint8_t>* servos = msg->Servos();
                     if (servos->size() >= 3) {
                         int a = servos->Get(0);
                         int b = servos->Get(1);
                         int c = servos->Get(2);
+                        #ifndef NO_PRINTS
                         pc.printf(" with a=%03d,b=%03d,c=%03d", a, b, c);
+                        #endif
                         // Print numbers zero-padded to 3 digits
                         daq.printf("a%03db%03dc%03d\n", a, b, c);
                     } else {
+                        #ifndef NO_PRINTS
                         pc.printf(" (size != 3)");
+                        #endif
                     }
+                    #ifndef NO_PRINTS
                     pc.printf("\r\n");
+                    #endif
                 } else if (msg->Type() == PropUplinkType_IgnitionOff) {
+                    #ifndef NO_PRINTS
                     pc.printf("Received off command\r\n");
+                    #endif
                     daq.printf("off\n");
                 } else if (msg->Type() == PropUplinkType_Ignition) {
+                    #ifndef NO_PRINTS
                     pc.printf("Received ignite command\r\n");
+                    #endif
                     daq.printf("ignite\n");
                 }
                 if (msg->AckReqd()) {
@@ -341,16 +377,12 @@ const PropUplinkMsg *getPropUplinkMsgChar(char c) {
 
 void resend_msgs() {
     for (auto &msg : acks_remaining) {
-        tx_led = 1;
         const std::vector<uint8_t> &vec = std::get<0>(msg.second);
         radioTx(vec.data(), vec.size());
         std::get<1>(msg.second) = std::get<1>(msg.second) + 1;
         if (std::get<1>(msg.second) >= MAX_NUM_RETRIES) {
             acks_remaining.erase(msg.first);
         }
-    }
-    if (tx_led.read() == 1) {
-        t_tx_led_on = t.read_ms();
     }
 }
 
@@ -367,5 +399,7 @@ void sendAck(uint8_t frame_id) {
 
 
 void radioTx(const uint8_t *const data, const int32_t data_len) {
-    radio.send(data, data_len);
+    memcpy(remaining_send_buf, data, data_len);
+    remaining_send_size = data_len;
+    remaining_send_buf_start = 0;
 }

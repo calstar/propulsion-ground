@@ -11,7 +11,7 @@ Servo servo3;
 #define SERVO3_PIN (11)
 #define IGNITION_PIN (7)
 #define IGNITION_TIME_MS (1000)
-#define STATE_UPDATE_INTERVAL_MS (500)
+#define STATE_UPDATE_INTERVAL_MS (1000)
 #define FS_PIN (A4)
 
 bool doServoCmd(String);
@@ -70,7 +70,7 @@ bool doServoCmd(String str) {
     // So if we read 0, make sure the text is actually just "000"
     if (a < 0 || a > 180 || (a == 0 && str.substring(1,  4) != "000")) return false;
     if (b < 0 || b > 180 || (b == 0 && str.substring(5,  8) != "000")) return false;
-    if (b < 0 || b > 180 || (b == 0 && str.substring(9, 12) != "000")) return false;
+    if (c < 0 || c > 180 || (c == 0 && str.substring(9, 12) != "000")) return false;
 
     if (!servosAttached) {
       servo1.attach(SERVO1_PIN, SERVO_MIN_USEC, SERVO_MAX_USEC);

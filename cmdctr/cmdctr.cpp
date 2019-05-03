@@ -180,7 +180,46 @@ void loop() {
                         acks_remaining.erase(msg->FrameID());
                     }
                 } else if (msg->Type() == PropDownlinkType_StateUpdate) {
+                    bool igniting = msg->Igniting();
+                    float loadCell = msg->LoadCell();
+                    const Vector<uint8_t> *servos = msg->Servos();
+                    int servosLen = servos->size() / sizeof(uint8_t);
+                    const Vector<uint16_t> *thermocouples = msg->Thermocouples();
+                    int thermocouplesLen = thermocouples->size() / sizeof(uint16_t);
+                    bool flowSwitch = msg->FlowSwitch();
+                    const Vector<uint16_t> *pressureTransducers = msg->PressureTransducers();
+                    int pressureTransducersLen = pressureTransducers->size() / sizeof(uint16_t);
 
+                    std::string ignitingStr = igniting ? "true" : "false";
+                    std::string loadCellStr = "null"; // TODO: output float
+                    std::string servosStr = "[";
+                    for (int i = 0; i < servosLen; i++) {
+                        servosStr += std::to_string(servos->Get(i));
+                        if (i < servosLen - 1) {
+                            servosStr += ",";
+                        }
+                    }
+                    servosStr += "]";
+                    std::string thermocouplesStr = "[";
+                    for (int i = 0; i < thermocouplesLen; i++) {
+                        thermocouplesStr += std::to_string(thermocouples->Get(i));
+                        if (i < thermocouplesLen - 1) {
+                            thermocouplesStr += ",";
+                        }
+                    }
+                    thermocouplesStr += "]";
+                    std::string flowSwitchStr = flowSwitch ? "true" : "false";
+                    std::string pressureTransducersStr = "[";
+                    for (int i = 0; i < pressureTransducersLen; i++) {
+                        pressureTransducersStr += std::to_string(pressureTransducers->Get(i));
+                        if (i < pressureTransducersLen - 1) {
+                            pressureTransducersStr += ",";
+                        }
+                    }
+                    pressureTransducersStr += "]";
+
+                    pc.printf("{\"update\":{\"igniting\":%s,\"loadCell\":%s,\"servos\":%s,\"thermocouples\":%s,\"flowSwitch\":%s,\"pressureTransducers\":%s}}\r\n",
+                        ignitingStr.c_str(), loadCellStr.c_str(), servosStr.c_str(), thermocouplesStr.c_str(), flowSwitchStr.c_str(), pressureTransducersStr.c_str());
                 }
                 if (msg->AckReqd()) {
                     sendAck(msg->FrameID());
@@ -342,6 +381,7 @@ void sendAck(uint8_t frame_id) {
 void radioTx(const uint8_t *const data, const int32_t data_len) {
     radio.send(data, data_len);
     pc.printf("{\"status\":\"Sending %d bytes\"}\r\n", data_len);
+    // WARNING: Only works because payloads are fewer bytes than max radio can send at once (~64)
 }
 
 bool validServoCmd(const std::string &str) {
@@ -356,7 +396,7 @@ bool validServoCmd(const std::string &str) {
     // So if we read 0, make sure the text is actually just "000"
     if (a < 0 || a > 180 || (a == 0 && str.substr(1,3) != "000")) return false;
     if (b < 0 || b > 180 || (b == 0 && str.substr(5,3) != "000")) return false;
-    if (b < 0 || b > 180 || (b == 0 && str.substr(9,3) != "000")) return false;
+    if (c < 0 || c > 180 || (c == 0 && str.substr(9,3) != "000")) return false;
     return true;
 }
 bool validIgnitionOffCmd(const std::string &str) {
