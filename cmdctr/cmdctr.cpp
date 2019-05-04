@@ -196,7 +196,7 @@ void loop() {
                     for (int i = 0; i < servosLen; i++) {
                         servosStr += std::to_string(servos->Get(i));
                         if (i < servosLen - 1) {
-                            servosStr += ",";
+                            servosStr += ";";
                         }
                     }
                     servosStr += "]";
@@ -204,7 +204,7 @@ void loop() {
                     for (int i = 0; i < thermocouplesLen; i++) {
                         thermocouplesStr += std::to_string(thermocouples->Get(i));
                         if (i < thermocouplesLen - 1) {
-                            thermocouplesStr += ",";
+                            thermocouplesStr += ";";
                         }
                     }
                     thermocouplesStr += "]";
@@ -213,12 +213,12 @@ void loop() {
                     for (int i = 0; i < pressureTransducersLen; i++) {
                         pressureTransducersStr += std::to_string(pressureTransducers->Get(i));
                         if (i < pressureTransducersLen - 1) {
-                            pressureTransducersStr += ",";
+                            pressureTransducersStr += ";";
                         }
                     }
                     pressureTransducersStr += "]";
 
-                    pc.printf("{\"update\":{\"igniting\":%s,\"loadCell\":%s,\"servos\":%s,\"thermocouples\":%s,\"flowSwitch\":%s,\"pressureTransducers\":%s}}\r\n",
+                    pc.printf("{\"igniting\":%s,\"loadCell\":%s,\"servos\":%s,\"thermocouples\":%s,\"flowSwitch\":%s,\"pressureTransducers\":%s}\r\n",
                         ignitingStr.c_str(), loadCellStr.c_str(), servosStr.c_str(), thermocouplesStr.c_str(), flowSwitchStr.c_str(), pressureTransducersStr.c_str());
                 }
                 if (msg->AckReqd()) {
