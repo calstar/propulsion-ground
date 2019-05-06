@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO.Ports;
+using System.Web.Script.Serialization;
 
 namespace PropLaptopTemp
 {
@@ -87,6 +88,7 @@ namespace PropLaptopTemp
             if (dialog.ShowDialog() != DialogResult.OK)
             {
                 Application.Exit();
+                return;
             }
 
             string portName = dialog.COMPort;
@@ -95,10 +97,21 @@ namespace PropLaptopTemp
             this.port = new SerialPort(portName, 9600);
             this.port.DtrEnable = true;
             this.port.DataReceived += (s, ev) => receiveSerialData();
-            this.port.Open();
+            try
+            {
+                this.port.Open();
+            }
+            catch (Exception error)
+            {
+                MessageBox.Show(error.Message, "Error: Could not open " + portName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Application.Exit();
+                return;
+            }
+            
             this.port.Write("![NO_RETRY]!\n");
         }
 
+        DateTime lastReceivedTime;
         void receiveSerialData()
         {
             buffer += port.ReadExisting();
@@ -108,77 +121,53 @@ namespace PropLaptopTemp
                 string line = buffer.Substring(0, eolIndex).Trim();
                 buffer = buffer.Substring(eolIndex + 1);
 
-                // Seems like there's no easy JSON library in .NET, so we'll just do our own for now
-                JSONObject obj = JSONObject.fromString(line);
-                if (obj != null && obj.type == JSONObject.Type.Object)
+                try
                 {
-                    if (obj.children.Keys.Contains("flowSwitch"))
+                    Dictionary<string, object> obj = (Dictionary<string, object>)new JavaScriptSerializer().DeserializeObject(line);
+                    if (obj.Keys.Contains("status"))
                     {
-                        JSONObject fsObj = obj.children["flowSwitch"];
-                        if (fsObj.type == JSONObject.Type.Bool)
-                        {
-                            invoke(flowSwitchLabel, () =>
-                            {
-                                flowSwitchLabel.BackColor = fsObj.boolValue ? Color.Green : Color.Red;
-                            });
-                        }
+                        string status = (string)obj["status"];
+                        statusTextBox.TryInvoke(() => statusTextBox.AppendText(status + "\r\n"));
                     }
-                    if (obj.children.Keys.Contains("igniting"))
+                    else if (obj.Keys.Contains("update"))
                     {
-                        JSONObject ignObj = obj.children["igniting"];
-                        if (ignObj.type == JSONObject.Type.Bool)
+                        Dictionary<string, object> update = (Dictionary<string, object>)obj["update"];
+                        bool fs = (bool)update["flowSwitch"];
+                        bool igniting = (bool)update["igniting"];
+                        int[] servos = (from s in (object[])update["servos"] select (int)s).ToArray();
+                        flowSwitchLabel.TryInvoke(() => flowSwitchLabel.BackColor = fs ? Color.Green : Color.Red);
+                        ignitionLabel.TryInvoke(() =>
                         {
-                            invoke(ignitionLabel, () =>
+                            if (igniting)
                             {
-                                if (ignObj.boolValue)
-                                {
-                                    ignitionLabel.BackColor = Color.Green;
-                                    ignitionLabel.Text = "Igniting!";
-                                }
-                                else
-                                {
-                                    ignitionLabel.BackColor = Color.Yellow;
-                                    ignitionLabel.Text = "Ignition Ready";
-                                }
-                            });
-                        }
-                    }
-                    if (obj.children.Keys.Contains("servos"))
-                    {
-                        JSONObject servosObj = obj.children["servos"];
-                        if (servosObj.type == JSONObject.Type.Array)
-                        {
-                            if (servosObj.items.Length == 3 && servosObj.items.All(s => s.type == JSONObject.Type.Int))
-                            {
-                                linkValues = false;
-                                try { servoAUpDown.Value = servoATrackBar.Value = servosObj.items[0].intValue; } catch (Exception _) { }
-                                try { servoBUpDown.Value = servoBTrackBar.Value = servosObj.items[1].intValue; } catch (Exception _) { }
-                                try { servoCUpDown.Value = servoCTrackBar.Value = servosObj.items[2].intValue; } catch (Exception _) { }
-                                linkValues = true;
-                                invoke(statusTextBox, () => {
-                                    statusTextBox.AppendText("Servos updated to " + servosObj.items[0].intValue + "," + servosObj.items[1].intValue + "," + servosObj.items[2].intValue + "\r\n");
-                                });
+                                ignitionLabel.BackColor = Color.Green;
+                                ignitionLabel.Text = "Igniting!";
                             }
-                        }
+                            else
+                            {
+                                ignitionLabel.BackColor = Color.Yellow;
+                                ignitionLabel.Text = "Ignition Ready";
+                            }
+                        });
+                        linkValues = false;
+                        servoAUpDownReadout.TryInvoke(() => servoAUpDownReadout.Value = servos[0]);
+                        servoBUpDownReadout.TryInvoke(() => servoBUpDownReadout.Value = servos[1]);
+                        servoCUpDownReadout.TryInvoke(() => servoCUpDownReadout.Value = servos[2]);
+                        servoATrackBarReadout.TryInvoke(() => servoATrackBarReadout.Value = servos[0]);
+                        servoBTrackBarReadout.TryInvoke(() => servoBTrackBarReadout.Value = servos[1]);
+                        servoCTrackBarReadout.TryInvoke(() => servoCTrackBarReadout.Value = servos[2]);
+                        linkValues = true;
                     }
-                    else if (obj.children.Keys.Contains("status"))
-                    {
-                        JSONObject statusObj = obj.children["status"];
-                        if (statusObj.type == JSONObject.Type.String)
-                        {
-                            invoke(statusTextBox, () => {
-                                statusTextBox.AppendText(statusObj.strValue + "\r\n");
-                            });
-                        }
-                    }
+
+
+                }
+                catch (Exception e)
+                {
+                    statusTextBox.TryInvoke(() => {
+                        statusTextBox.AppendText("Error: Could not parse \"" + line + "\": " + e.Message + "\r\n");
+                    });
                 }
             }
-        }
-
-        void invoke(Control ctrl, Action action)
-        {
-            if (ctrl.InvokeRequired) ctrl.BeginInvoke(action);
-            else action();
         }
 
         private void updateServosButton_Click(object sender, EventArgs e)
@@ -199,7 +188,7 @@ namespace PropLaptopTemp
         }
     }
 
-    class JSONObject
+    /*class JSONObject
     {
         public enum Type { Object, Array, String, Int, Bool }
         
@@ -289,6 +278,14 @@ namespace PropLaptopTemp
                 }
             }
             return null;
+        }
+    }*/
+    static class Util
+    {
+        public static void TryInvoke(this Control ctrl, Action action)
+        {
+            if (ctrl.InvokeRequired) ctrl.BeginInvoke(action);
+            else action();
         }
     }
 }

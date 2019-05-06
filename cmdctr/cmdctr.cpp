@@ -196,7 +196,7 @@ void loop() {
                     for (int i = 0; i < servosLen; i++) {
                         servosStr += std::to_string(servos->Get(i));
                         if (i < servosLen - 1) {
-                            servosStr += ";";
+                            servosStr += ",";
                         }
                     }
                     servosStr += "]";
@@ -204,7 +204,7 @@ void loop() {
                     for (int i = 0; i < thermocouplesLen; i++) {
                         thermocouplesStr += std::to_string(thermocouples->Get(i));
                         if (i < thermocouplesLen - 1) {
-                            thermocouplesStr += ";";
+                            thermocouplesStr += ",";
                         }
                     }
                     thermocouplesStr += "]";
@@ -213,12 +213,12 @@ void loop() {
                     for (int i = 0; i < pressureTransducersLen; i++) {
                         pressureTransducersStr += std::to_string(pressureTransducers->Get(i));
                         if (i < pressureTransducersLen - 1) {
-                            pressureTransducersStr += ";";
+                            pressureTransducersStr += ",";
                         }
                     }
                     pressureTransducersStr += "]";
 
-                    pc.printf("{\"igniting\":%s,\"loadCell\":%s,\"servos\":%s,\"thermocouples\":%s,\"flowSwitch\":%s,\"pressureTransducers\":%s}\r\n",
+                    pc.printf("{\"update\":{\"igniting\":%s,\"loadCell\":%s,\"servos\":%s,\"thermocouples\":%s,\"flowSwitch\":%s,\"pressureTransducers\":%s}}\r\n",
                         ignitingStr.c_str(), loadCellStr.c_str(), servosStr.c_str(), thermocouplesStr.c_str(), flowSwitchStr.c_str(), pressureTransducersStr.c_str());
                 }
                 if (msg->AckReqd()) {
@@ -242,12 +242,12 @@ bool sendPropUplinkMsg(const std::string &str, bool with_ack) {
         pc.printf("{\"status\":\"sending servo command (%d,%d,%d)\"}\r\n", servos[0], servos[1], servos[2]);
     } else if (validIgnitionOffCmd(str)) {
         type = PropUplinkType_IgnitionOff;
-        pc.printf("{\"status\":\"sending ignition off command\r\n");
+        pc.printf("{\"status\":\"sending ignition off command\"}\r\n");
     } else if (validIgnitionCmd(str)) {
         if (!io1) {
             // Button is active-low, so it's currently pressed and we can send ignition
             type = PropUplinkType_Ignition;
-            pc.printf("{\"status\":\"sending ignition pulse command\r\n");
+            pc.printf("{\"status\":\"sending ignition pulse command\"}\r\n");
         } else {
             // Button not pressed
             pc.printf("{\"status\":\"transmission of ignition command is locked\"}\r\n");

@@ -45,17 +45,36 @@
             this.label4 = new System.Windows.Forms.Label();
             this.igniteButton = new System.Windows.Forms.Button();
             this.turnOffButton = new System.Windows.Forms.Button();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.label5 = new System.Windows.Forms.Label();
+            this.servoAUpDownReadout = new System.Windows.Forms.NumericUpDown();
+            this.servoBUpDownReadout = new System.Windows.Forms.NumericUpDown();
+            this.servoCUpDownReadout = new System.Windows.Forms.NumericUpDown();
+            this.label6 = new System.Windows.Forms.Label();
+            this.label7 = new System.Windows.Forms.Label();
+            this.servoATrackBarReadout = new System.Windows.Forms.TrackBar();
+            this.servoBTrackBarReadout = new System.Windows.Forms.TrackBar();
+            this.servoCTrackBarReadout = new System.Windows.Forms.TrackBar();
             ((System.ComponentModel.ISupportInitialize)(this.servoAUpDown)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.servoBUpDown)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.servoCUpDown)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.servoATrackBar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.servoBTrackBar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.servoCTrackBar)).BeginInit();
+            this.groupBox1.SuspendLayout();
+            this.groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.servoAUpDownReadout)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.servoBUpDownReadout)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.servoCUpDownReadout)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.servoATrackBarReadout)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.servoBTrackBarReadout)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.servoCTrackBarReadout)).BeginInit();
             this.SuspendLayout();
             // 
             // servoAUpDown
             // 
-            this.servoAUpDown.Location = new System.Drawing.Point(82, 92);
+            this.servoAUpDown.Location = new System.Drawing.Point(74, 22);
             this.servoAUpDown.Maximum = new decimal(new int[] {
             180,
             0,
@@ -68,7 +87,7 @@
             // 
             // servoBUpDown
             // 
-            this.servoBUpDown.Location = new System.Drawing.Point(82, 120);
+            this.servoBUpDown.Location = new System.Drawing.Point(74, 50);
             this.servoBUpDown.Maximum = new decimal(new int[] {
             180,
             0,
@@ -81,7 +100,7 @@
             // 
             // servoCUpDown
             // 
-            this.servoCUpDown.Location = new System.Drawing.Point(82, 148);
+            this.servoCUpDown.Location = new System.Drawing.Point(74, 78);
             this.servoCUpDown.Maximum = new decimal(new int[] {
             180,
             0,
@@ -95,7 +114,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(14, 94);
+            this.label1.Location = new System.Drawing.Point(6, 24);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(62, 17);
             this.label1.TabIndex = 3;
@@ -104,7 +123,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(14, 122);
+            this.label2.Location = new System.Drawing.Point(6, 52);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(62, 17);
             this.label2.TabIndex = 4;
@@ -113,7 +132,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(14, 150);
+            this.label3.Location = new System.Drawing.Point(6, 80);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(62, 17);
             this.label3.TabIndex = 5;
@@ -124,10 +143,10 @@
             this.servoATrackBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.servoATrackBar.AutoSize = false;
-            this.servoATrackBar.Location = new System.Drawing.Point(159, 92);
+            this.servoATrackBar.Location = new System.Drawing.Point(151, 22);
             this.servoATrackBar.Maximum = 180;
             this.servoATrackBar.Name = "servoATrackBar";
-            this.servoATrackBar.Size = new System.Drawing.Size(629, 22);
+            this.servoATrackBar.Size = new System.Drawing.Size(619, 22);
             this.servoATrackBar.TabIndex = 6;
             this.servoATrackBar.Scroll += new System.EventHandler(this.servoATrackBar_Scroll);
             // 
@@ -136,10 +155,10 @@
             this.servoBTrackBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.servoBTrackBar.AutoSize = false;
-            this.servoBTrackBar.Location = new System.Drawing.Point(159, 120);
+            this.servoBTrackBar.Location = new System.Drawing.Point(151, 50);
             this.servoBTrackBar.Maximum = 180;
             this.servoBTrackBar.Name = "servoBTrackBar";
-            this.servoBTrackBar.Size = new System.Drawing.Size(629, 22);
+            this.servoBTrackBar.Size = new System.Drawing.Size(619, 22);
             this.servoBTrackBar.TabIndex = 7;
             this.servoBTrackBar.Scroll += new System.EventHandler(this.servoBTrackBar_Scroll);
             // 
@@ -148,16 +167,16 @@
             this.servoCTrackBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.servoCTrackBar.AutoSize = false;
-            this.servoCTrackBar.Location = new System.Drawing.Point(159, 148);
+            this.servoCTrackBar.Location = new System.Drawing.Point(151, 78);
             this.servoCTrackBar.Maximum = 180;
             this.servoCTrackBar.Name = "servoCTrackBar";
-            this.servoCTrackBar.Size = new System.Drawing.Size(629, 22);
+            this.servoCTrackBar.Size = new System.Drawing.Size(619, 22);
             this.servoCTrackBar.TabIndex = 8;
             this.servoCTrackBar.Scroll += new System.EventHandler(this.servoCTrackBar_Scroll);
             // 
             // updateServosButton
             // 
-            this.updateServosButton.Location = new System.Drawing.Point(17, 176);
+            this.updateServosButton.Location = new System.Drawing.Point(9, 106);
             this.updateServosButton.Name = "updateServosButton";
             this.updateServosButton.Size = new System.Drawing.Size(136, 32);
             this.updateServosButton.TabIndex = 9;
@@ -178,7 +197,7 @@
             // 
             // receivingDataLabel
             // 
-            this.receivingDataLabel.BackColor = System.Drawing.Color.Green;
+            this.receivingDataLabel.BackColor = System.Drawing.Color.Red;
             this.receivingDataLabel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.receivingDataLabel.Location = new System.Drawing.Point(12, 9);
             this.receivingDataLabel.Name = "receivingDataLabel";
@@ -201,19 +220,19 @@
             // statusTextBox
             // 
             this.statusTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.statusTextBox.Location = new System.Drawing.Point(12, 250);
+            this.statusTextBox.Location = new System.Drawing.Point(12, 391);
             this.statusTextBox.Multiline = true;
             this.statusTextBox.Name = "statusTextBox";
             this.statusTextBox.ReadOnly = true;
             this.statusTextBox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.statusTextBox.Size = new System.Drawing.Size(776, 188);
+            this.statusTextBox.Size = new System.Drawing.Size(776, 203);
             this.statusTextBox.TabIndex = 14;
             // 
             // label4
             // 
             this.label4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(14, 230);
+            this.label4.Location = new System.Drawing.Point(12, 371);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(90, 17);
             this.label4.TabIndex = 15;
@@ -239,11 +258,159 @@
             this.turnOffButton.UseVisualStyleBackColor = true;
             this.turnOffButton.Click += new System.EventHandler(this.turnOffButton_Click);
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.label1);
+            this.groupBox1.Controls.Add(this.servoAUpDown);
+            this.groupBox1.Controls.Add(this.servoBUpDown);
+            this.groupBox1.Controls.Add(this.servoCUpDown);
+            this.groupBox1.Controls.Add(this.label2);
+            this.groupBox1.Controls.Add(this.label3);
+            this.groupBox1.Controls.Add(this.servoATrackBar);
+            this.groupBox1.Controls.Add(this.servoBTrackBar);
+            this.groupBox1.Controls.Add(this.updateServosButton);
+            this.groupBox1.Controls.Add(this.servoCTrackBar);
+            this.groupBox1.Location = new System.Drawing.Point(12, 98);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(776, 151);
+            this.groupBox1.TabIndex = 18;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Servo Uplink";
+            // 
+            // groupBox2
+            // 
+            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox2.Controls.Add(this.label5);
+            this.groupBox2.Controls.Add(this.servoAUpDownReadout);
+            this.groupBox2.Controls.Add(this.servoBUpDownReadout);
+            this.groupBox2.Controls.Add(this.servoCUpDownReadout);
+            this.groupBox2.Controls.Add(this.label6);
+            this.groupBox2.Controls.Add(this.label7);
+            this.groupBox2.Controls.Add(this.servoATrackBarReadout);
+            this.groupBox2.Controls.Add(this.servoBTrackBarReadout);
+            this.groupBox2.Controls.Add(this.servoCTrackBarReadout);
+            this.groupBox2.Location = new System.Drawing.Point(12, 255);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(776, 113);
+            this.groupBox2.TabIndex = 19;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Servo Downlink";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(6, 24);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(62, 17);
+            this.label5.TabIndex = 3;
+            this.label5.Text = "Servo A:";
+            // 
+            // servoAUpDownReadout
+            // 
+            this.servoAUpDownReadout.Enabled = false;
+            this.servoAUpDownReadout.Location = new System.Drawing.Point(74, 22);
+            this.servoAUpDownReadout.Maximum = new decimal(new int[] {
+            180,
+            0,
+            0,
+            0});
+            this.servoAUpDownReadout.Name = "servoAUpDownReadout";
+            this.servoAUpDownReadout.ReadOnly = true;
+            this.servoAUpDownReadout.Size = new System.Drawing.Size(71, 22);
+            this.servoAUpDownReadout.TabIndex = 0;
+            // 
+            // servoBUpDownReadout
+            // 
+            this.servoBUpDownReadout.Enabled = false;
+            this.servoBUpDownReadout.Location = new System.Drawing.Point(74, 50);
+            this.servoBUpDownReadout.Maximum = new decimal(new int[] {
+            180,
+            0,
+            0,
+            0});
+            this.servoBUpDownReadout.Name = "servoBUpDownReadout";
+            this.servoBUpDownReadout.ReadOnly = true;
+            this.servoBUpDownReadout.Size = new System.Drawing.Size(71, 22);
+            this.servoBUpDownReadout.TabIndex = 1;
+            // 
+            // servoCUpDownReadout
+            // 
+            this.servoCUpDownReadout.Enabled = false;
+            this.servoCUpDownReadout.Location = new System.Drawing.Point(74, 78);
+            this.servoCUpDownReadout.Maximum = new decimal(new int[] {
+            180,
+            0,
+            0,
+            0});
+            this.servoCUpDownReadout.Name = "servoCUpDownReadout";
+            this.servoCUpDownReadout.ReadOnly = true;
+            this.servoCUpDownReadout.Size = new System.Drawing.Size(71, 22);
+            this.servoCUpDownReadout.TabIndex = 2;
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(6, 52);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(62, 17);
+            this.label6.TabIndex = 4;
+            this.label6.Text = "Servo B:";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(6, 80);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(62, 17);
+            this.label7.TabIndex = 5;
+            this.label7.Text = "Servo C:";
+            // 
+            // servoATrackBarReadout
+            // 
+            this.servoATrackBarReadout.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.servoATrackBarReadout.AutoSize = false;
+            this.servoATrackBarReadout.Enabled = false;
+            this.servoATrackBarReadout.Location = new System.Drawing.Point(151, 22);
+            this.servoATrackBarReadout.Maximum = 180;
+            this.servoATrackBarReadout.Name = "servoATrackBarReadout";
+            this.servoATrackBarReadout.Size = new System.Drawing.Size(619, 22);
+            this.servoATrackBarReadout.TabIndex = 6;
+            // 
+            // servoBTrackBarReadout
+            // 
+            this.servoBTrackBarReadout.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.servoBTrackBarReadout.AutoSize = false;
+            this.servoBTrackBarReadout.Enabled = false;
+            this.servoBTrackBarReadout.Location = new System.Drawing.Point(151, 50);
+            this.servoBTrackBarReadout.Maximum = 180;
+            this.servoBTrackBarReadout.Name = "servoBTrackBarReadout";
+            this.servoBTrackBarReadout.Size = new System.Drawing.Size(619, 22);
+            this.servoBTrackBarReadout.TabIndex = 7;
+            // 
+            // servoCTrackBarReadout
+            // 
+            this.servoCTrackBarReadout.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.servoCTrackBarReadout.AutoSize = false;
+            this.servoCTrackBarReadout.Enabled = false;
+            this.servoCTrackBarReadout.Location = new System.Drawing.Point(151, 78);
+            this.servoCTrackBarReadout.Maximum = 180;
+            this.servoCTrackBarReadout.Name = "servoCTrackBarReadout";
+            this.servoCTrackBarReadout.Size = new System.Drawing.Size(619, 22);
+            this.servoCTrackBarReadout.TabIndex = 8;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(800, 606);
+            this.Controls.Add(this.groupBox2);
+            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.turnOffButton);
             this.Controls.Add(this.igniteButton);
             this.Controls.Add(this.label4);
@@ -251,16 +418,6 @@
             this.Controls.Add(this.flowSwitchLabel);
             this.Controls.Add(this.receivingDataLabel);
             this.Controls.Add(this.ignitionLabel);
-            this.Controls.Add(this.updateServosButton);
-            this.Controls.Add(this.servoCTrackBar);
-            this.Controls.Add(this.servoBTrackBar);
-            this.Controls.Add(this.servoATrackBar);
-            this.Controls.Add(this.label3);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
-            this.Controls.Add(this.servoCUpDown);
-            this.Controls.Add(this.servoBUpDown);
-            this.Controls.Add(this.servoAUpDown);
             this.Name = "Form1";
             this.Text = "Propulsion Ground Test (Temp)";
             this.Load += new System.EventHandler(this.Form1_Load);
@@ -270,6 +427,16 @@
             ((System.ComponentModel.ISupportInitialize)(this.servoATrackBar)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.servoBTrackBar)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.servoCTrackBar)).EndInit();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
+            this.groupBox2.ResumeLayout(false);
+            this.groupBox2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.servoAUpDownReadout)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.servoBUpDownReadout)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.servoCUpDownReadout)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.servoATrackBarReadout)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.servoBTrackBarReadout)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.servoCTrackBarReadout)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -294,6 +461,17 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Button igniteButton;
         private System.Windows.Forms.Button turnOffButton;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.NumericUpDown servoAUpDownReadout;
+        private System.Windows.Forms.NumericUpDown servoBUpDownReadout;
+        private System.Windows.Forms.NumericUpDown servoCUpDownReadout;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.TrackBar servoATrackBarReadout;
+        private System.Windows.Forms.TrackBar servoBTrackBarReadout;
+        private System.Windows.Forms.TrackBar servoCTrackBarReadout;
     }
 }
 
