@@ -16,10 +16,16 @@ namespace PropLaptopTemp
     {
         SerialPort port;
         string buffer = "";
+        System.Timers.Timer updateTimer = new System.Timers.Timer(2000);
 
         public Form1()
         {
             InitializeComponent();
+            updateTimer.Elapsed += (s, e) =>
+            {
+                receivingDataLabel.TryInvoke(() => receivingDataLabel.BackColor = Color.Red);
+            };
+            updateTimer.Start();
         }
 
         bool linkValues = true;
@@ -111,7 +117,6 @@ namespace PropLaptopTemp
             this.port.Write("![NO_RETRY]!\n");
         }
 
-        DateTime lastReceivedTime;
         void receiveSerialData()
         {
             buffer += port.ReadExisting();
@@ -135,6 +140,8 @@ namespace PropLaptopTemp
                         bool fs = (bool)update["flowSwitch"];
                         bool igniting = (bool)update["igniting"];
                         int[] servos = (from s in (object[])update["servos"] select (int)s).ToArray();
+                        int[] thermocouples = (from s in (object[])update["thermocouples"] select (int)s).ToArray();
+                        int[] tcTemps = (from tc in thermocouples select (int)Math.Round(((tc / 1023f * 5f) - 1.25f) * 200f)).ToArray();
                         flowSwitchLabel.TryInvoke(() => flowSwitchLabel.BackColor = fs ? Color.Green : Color.Red);
                         ignitionLabel.TryInvoke(() =>
                         {
@@ -157,6 +164,13 @@ namespace PropLaptopTemp
                         servoBTrackBarReadout.TryInvoke(() => servoBTrackBarReadout.Value = servos[1]);
                         servoCTrackBarReadout.TryInvoke(() => servoCTrackBarReadout.Value = servos[2]);
                         linkValues = true;
+                        thermocouple1Label.TryInvoke(() => thermocouple1Label.Text = "Thermocouple 1:\n" + tcTemps[0] + "°C");
+                        thermocouple2Label.TryInvoke(() => thermocouple2Label.Text = "Thermocouple 2:\n" + tcTemps[1] + "°C");
+                        thermocouple3Label.TryInvoke(() => thermocouple3Label.Text = "Thermocouple 3:\n" + tcTemps[2] + "°C");
+
+                        updateTimer.Stop();
+                        updateTimer.Start();
+                        receivingDataLabel.TryInvoke(() => receivingDataLabel.BackColor = Color.Green);
                     }
 
 

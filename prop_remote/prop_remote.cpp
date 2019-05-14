@@ -51,9 +51,7 @@ using namespace Calstar;
 Timer t;
 
 Serial daq(DEBUG_TX, DEBUG_RX, DAQ_BAUDRATE);
-#ifndef NO_PRINTS
-USBSerial pc;
-#endif
+USBSerial pc(0x1f00, 0x2019, 0x0002, false);
 
 uint8_t rx_buf[RX_BUF_LEN];
 RFM69 radio(SPI1_MOSI, SPI1_MISO, SPI1_SCLK, SPI1_SSEL, RADIO_RST, true);
@@ -139,9 +137,9 @@ void loop() {
                 // Remove \r before printing
                 line = line.substr(0, line.length()-1);
             }
-            #ifndef NO_PRINTS
-            pc.printf("Read from DAQ: \"%s\"\r\n", line.c_str());
-            #endif
+            if (pc.configured()) {
+                pc.printf("Read from DAQ: \"%s\"\r\n", line.c_str());
+            }
 
             // Format:
             // s:a###b###c###.  = servos(a,b,c)
@@ -169,29 +167,30 @@ void loop() {
                         servos[1] = (uint8_t)b;
                         servos[2] = (uint8_t)c;
                         retry = true;
-                        #ifndef NO_PRINTS
-                        pc.printf("Sending downlink: servos(%03d,%03d,%03d)\r\n", a, b, c);
-                        #endif
+                        if (pc.configured()) {
+                            pc.printf("Sending downlink: servos(%03d,%03d,%03d)\r\n", a, b, c);
+                        }
                     }
                 } else if (line == "o.") {
                     igniting = false;
                     retry = true;
-                    #ifndef NO_PRINTS
-                    pc.printf("Sending downlink: ignition off\r\n");
-                    #endif
+                    if (pc.configured()) {
+                        pc.printf("Sending downlink: ignition off\r\n");
+                    }
                 } else if (line == "i.") {
                     igniting = true;
                     retry = true;
-                    #ifndef NO_PRINTS
-                    pc.printf("Sending downlink: igniting\r\n");
-                    #endif
+                    if (pc.configured()) {
+                        pc.printf("Sending downlink: igniting\r\n");
+                    }
                 } else if (line == "d.") {
                     igniting = false;
                     retry = true;
-                    #ifndef NO_PRINTS
-                    pc.printf("Sending downlink: ignition done\r\n");
-                    #endif
-                } else if (line[0] == 'u' && line[1] == ':') {
+                    if (pc.configured()) {
+                        pc.printf("Sending downlink: ignition done\r\n");
+                    }
+                } else if (line[0] == 'u' && line[1] == ':' && line[3] == ',' && line[8] == ',' && line[13] == ',') {
+                    // u:$,####,####,####.
                     // Check fields
                     bool fs;
                     if (line[2] == 't' || line[2] == 'f') { 
@@ -199,12 +198,23 @@ void loop() {
                     } else {
                         dataOk = false;
                     }
-                    // TODO: additional fields
+                    int tc1 = std::stoi(line.substr(4, 4));
+                    int tc2 = std::stoi(line.substr(9, 4));
+                    int tc3 = std::stoi(line.substr(14,4));
+                    // We need to make sure that the thermocouple values are between 0 and 1023
+                    // But if we read a 0, that could have just been a stoi failure
+                    // So if we read 0, make sure the text is actually just "0000"
+                    if (tc1 < 0 || tc1 > 1023 || (tc1 == 0 && line.substr(4, 4) != "0000")) dataOk = false;
+                    if (tc2 < 0 || tc2 > 1023 || (tc2 == 0 && line.substr(9, 4) != "0000")) dataOk = false;
+                    if (tc3 < 0 || tc3 > 1023 || (tc3 == 0 && line.substr(14,4) != "0000")) dataOk = false;
                     if (dataOk) {
                         flowSwitch = fs;
-                        #ifndef NO_PRINTS
-                        pc.printf("Sending downlink: update(%d)\r\n", fs);
-                        #endif
+                        thermocouples[0] = (uint16_t)tc1;
+                        thermocouples[1] = (uint16_t)tc2;
+                        thermocouples[2] = (uint16_t)tc3;
+                        if (pc.configured()) {
+                            pc.printf("Sending downlink: update(%d,%d,%d,%d)\r\n", fs, tc1, tc2, tc3);
+                        }
                     }
                 }
             } else {
@@ -232,36 +242,36 @@ void loop() {
                         acks_remaining.erase(msg->FrameID());
                     }
                 } else if (msg->Type() == PropUplinkType_Servos) {
-                    #ifndef NO_PRINTS
-                    pc.printf("Received servo command");
-                    #endif
+                    if (pc.configured()) {
+                        pc.printf("Received servo command");
+                    }
                     const Vector<uint8_t>* servos = msg->Servos();
                     if (servos->size() >= 3) {
                         int a = servos->Get(0);
                         int b = servos->Get(1);
                         int c = servos->Get(2);
-                        #ifndef NO_PRINTS
-                        pc.printf(" with a=%03d,b=%03d,c=%03d", a, b, c);
-                        #endif
+                        if (pc.configured()) {
+                            pc.printf(" with a=%03d,b=%03d,c=%03d", a, b, c);
+                        }
                         // Print numbers zero-padded to 3 digits
                         daq.printf("a%03db%03dc%03d\n", a, b, c);
                     } else {
-                        #ifndef NO_PRINTS
-                        pc.printf(" (size != 3)");
-                        #endif
+                        if (pc.configured()) {
+                            pc.printf(" (size != 3)");
+                        }
                     }
-                    #ifndef NO_PRINTS
-                    pc.printf("\r\n");
-                    #endif
+                    if (pc.configured()) {
+                        pc.printf("\r\n");
+                    }
                 } else if (msg->Type() == PropUplinkType_IgnitionOff) {
-                    #ifndef NO_PRINTS
-                    pc.printf("Received off command\r\n");
-                    #endif
+                    if (pc.configured()) {
+                        pc.printf("Received off command\r\n");
+                    }
                     daq.printf("off\n");
                 } else if (msg->Type() == PropUplinkType_Ignition) {
-                    #ifndef NO_PRINTS
-                    pc.printf("Received ignite command\r\n");
-                    #endif
+                    if (pc.configured()) {
+                        pc.printf("Received ignite command\r\n");
+                    }
                     daq.printf("ignite\n");
                 }
                 if (msg->AckReqd()) {

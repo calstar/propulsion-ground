@@ -13,6 +13,9 @@ Servo servo3;
 #define IGNITION_TIME_MS (1000)
 #define STATE_UPDATE_INTERVAL_MS (1000)
 #define FS_PIN (A4)
+#define TC1_PIN (A0)
+#define TC2_PIN (A1)
+#define TC3_PIN (A2)
 
 bool doServoCmd(String);
 bool doIgnitionOffCmd(String);
@@ -26,6 +29,9 @@ void setup() {
     pinMode(IGNITION_PIN, OUTPUT);
     digitalWrite(IGNITION_PIN, 0);
     pinMode(FS_PIN, INPUT);
+    pinMode(TC1_PIN, INPUT);
+    pinMode(TC2_PIN, INPUT);
+    pinMode(TC3_PIN, INPUT);
 
     buffer = "";
     servosAttached = false;
@@ -50,8 +56,20 @@ void loop() {
     if (currentTime_ms >= lastStateUpdateTime_ms + STATE_UPDATE_INTERVAL_MS) {
         // Time to send a state update!
         bool flowSwitch = !digitalRead(FS_PIN); // active low
+        int tc1 = analogRead(TC1_PIN); // in [0, 1023]
+        int tc2 = analogRead(TC2_PIN); // in [0, 1023]
+        int tc3 = analogRead(TC3_PIN); // in [0, 1023]
         Serial.print("u:");
         if (flowSwitch) Serial.print("t"); else Serial.print("f");
+        Serial.print(",");
+        if (tc1 < 10) Serial.print("000"); else if (tc1 < 100) Serial.print("00"); else if (tc1 < 1000) Serial.print("0");
+        Serial.print(tc1);
+        Serial.print(",");
+        if (tc2 < 10) Serial.print("000"); else if (tc2 < 100) Serial.print("00"); else if (tc2 < 1000) Serial.print("0");
+        Serial.print(tc2);
+        Serial.print(",");
+        if (tc3 < 10) Serial.print("000"); else if (tc3 < 100) Serial.print("00"); else if (tc3 < 1000) Serial.print("0");
+        Serial.print(tc3);
         Serial.print(".\r\n");
 
         lastStateUpdateTime_ms = currentTime_ms;

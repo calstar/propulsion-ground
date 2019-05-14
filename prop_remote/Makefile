@@ -18,10 +18,6 @@ build: prop_downlink_generated.h prop_uplink_generated.h
 	time mbed compile --target $(build_target) --toolchain $(build_toolchain) \
 	&& mkdir -p $(outdir) && cp $(build_dir)/$(build_target)/$(build_toolchain)/$(project_name).bin $(outpath) \
 	&& echo "Copied output to $(outpath)"
-build-no-prints: prop_downlink_generated.h prop_uplink_generated.h
-	time mbed compile --target $(build_target) --toolchain $(build_toolchain) -DNO_PRINTS \
-	&& mkdir -p $(outdir) && cp $(build_dir)/$(build_target)/$(build_toolchain)/$(project_name).bin $(outpath) \
-	&& echo "Copied output to $(outpath)"
 
 flash: validate
 	st-flash write $(outpath) 0x8000000

@@ -56,6 +56,11 @@
             this.servoATrackBarReadout = new System.Windows.Forms.TrackBar();
             this.servoBTrackBarReadout = new System.Windows.Forms.TrackBar();
             this.servoCTrackBarReadout = new System.Windows.Forms.TrackBar();
+            this.thermocouple1Label = new System.Windows.Forms.Label();
+            this.thermocouple2Label = new System.Windows.Forms.Label();
+            this.thermocouple3Label = new System.Windows.Forms.Label();
+            this.pressureTransducerLabel = new System.Windows.Forms.Label();
+            this.loadCellLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.servoAUpDown)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.servoBUpDown)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.servoCUpDown)).BeginInit();
@@ -146,7 +151,7 @@
             this.servoATrackBar.Location = new System.Drawing.Point(151, 22);
             this.servoATrackBar.Maximum = 180;
             this.servoATrackBar.Name = "servoATrackBar";
-            this.servoATrackBar.Size = new System.Drawing.Size(619, 22);
+            this.servoATrackBar.Size = new System.Drawing.Size(944, 22);
             this.servoATrackBar.TabIndex = 6;
             this.servoATrackBar.Scroll += new System.EventHandler(this.servoATrackBar_Scroll);
             // 
@@ -158,7 +163,7 @@
             this.servoBTrackBar.Location = new System.Drawing.Point(151, 50);
             this.servoBTrackBar.Maximum = 180;
             this.servoBTrackBar.Name = "servoBTrackBar";
-            this.servoBTrackBar.Size = new System.Drawing.Size(619, 22);
+            this.servoBTrackBar.Size = new System.Drawing.Size(944, 22);
             this.servoBTrackBar.TabIndex = 7;
             this.servoBTrackBar.Scroll += new System.EventHandler(this.servoBTrackBar_Scroll);
             // 
@@ -170,7 +175,7 @@
             this.servoCTrackBar.Location = new System.Drawing.Point(151, 78);
             this.servoCTrackBar.Maximum = 180;
             this.servoCTrackBar.Name = "servoCTrackBar";
-            this.servoCTrackBar.Size = new System.Drawing.Size(619, 22);
+            this.servoCTrackBar.Size = new System.Drawing.Size(944, 22);
             this.servoCTrackBar.TabIndex = 8;
             this.servoCTrackBar.Scroll += new System.EventHandler(this.servoCTrackBar_Scroll);
             // 
@@ -203,7 +208,7 @@
             this.receivingDataLabel.Name = "receivingDataLabel";
             this.receivingDataLabel.Size = new System.Drawing.Size(170, 65);
             this.receivingDataLabel.TabIndex = 12;
-            this.receivingDataLabel.Text = "Receiving Data";
+            this.receivingDataLabel.Text = "Receiving Data\r\n(Last 2 Seconds)";
             this.receivingDataLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // flowSwitchLabel
@@ -219,20 +224,21 @@
             // 
             // statusTextBox
             // 
-            this.statusTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.statusTextBox.Location = new System.Drawing.Point(12, 391);
+            this.statusTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.statusTextBox.Location = new System.Drawing.Point(12, 449);
             this.statusTextBox.Multiline = true;
             this.statusTextBox.Name = "statusTextBox";
             this.statusTextBox.ReadOnly = true;
             this.statusTextBox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.statusTextBox.Size = new System.Drawing.Size(776, 203);
+            this.statusTextBox.Size = new System.Drawing.Size(1101, 203);
             this.statusTextBox.TabIndex = 14;
             // 
             // label4
             // 
             this.label4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(12, 371);
+            this.label4.Location = new System.Drawing.Point(12, 429);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(90, 17);
             this.label4.TabIndex = 15;
@@ -272,9 +278,9 @@
             this.groupBox1.Controls.Add(this.servoBTrackBar);
             this.groupBox1.Controls.Add(this.updateServosButton);
             this.groupBox1.Controls.Add(this.servoCTrackBar);
-            this.groupBox1.Location = new System.Drawing.Point(12, 98);
+            this.groupBox1.Location = new System.Drawing.Point(12, 151);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(776, 151);
+            this.groupBox1.Size = new System.Drawing.Size(1101, 151);
             this.groupBox1.TabIndex = 18;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Servo Uplink";
@@ -292,9 +298,9 @@
             this.groupBox2.Controls.Add(this.servoATrackBarReadout);
             this.groupBox2.Controls.Add(this.servoBTrackBarReadout);
             this.groupBox2.Controls.Add(this.servoCTrackBarReadout);
-            this.groupBox2.Location = new System.Drawing.Point(12, 255);
+            this.groupBox2.Location = new System.Drawing.Point(12, 308);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(776, 113);
+            this.groupBox2.Size = new System.Drawing.Size(1101, 113);
             this.groupBox2.TabIndex = 19;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Servo Downlink";
@@ -377,7 +383,7 @@
             this.servoATrackBarReadout.Location = new System.Drawing.Point(151, 22);
             this.servoATrackBarReadout.Maximum = 180;
             this.servoATrackBarReadout.Name = "servoATrackBarReadout";
-            this.servoATrackBarReadout.Size = new System.Drawing.Size(619, 22);
+            this.servoATrackBarReadout.Size = new System.Drawing.Size(944, 22);
             this.servoATrackBarReadout.TabIndex = 6;
             // 
             // servoBTrackBarReadout
@@ -389,7 +395,7 @@
             this.servoBTrackBarReadout.Location = new System.Drawing.Point(151, 50);
             this.servoBTrackBarReadout.Maximum = 180;
             this.servoBTrackBarReadout.Name = "servoBTrackBarReadout";
-            this.servoBTrackBarReadout.Size = new System.Drawing.Size(619, 22);
+            this.servoBTrackBarReadout.Size = new System.Drawing.Size(944, 22);
             this.servoBTrackBarReadout.TabIndex = 7;
             // 
             // servoCTrackBarReadout
@@ -401,14 +407,74 @@
             this.servoCTrackBarReadout.Location = new System.Drawing.Point(151, 78);
             this.servoCTrackBarReadout.Maximum = 180;
             this.servoCTrackBarReadout.Name = "servoCTrackBarReadout";
-            this.servoCTrackBarReadout.Size = new System.Drawing.Size(619, 22);
+            this.servoCTrackBarReadout.Size = new System.Drawing.Size(944, 22);
             this.servoCTrackBarReadout.TabIndex = 8;
+            // 
+            // thermocouple1Label
+            // 
+            this.thermocouple1Label.BackColor = System.Drawing.SystemColors.Control;
+            this.thermocouple1Label.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.thermocouple1Label.Location = new System.Drawing.Point(650, 9);
+            this.thermocouple1Label.Name = "thermocouple1Label";
+            this.thermocouple1Label.Size = new System.Drawing.Size(147, 65);
+            this.thermocouple1Label.TabIndex = 20;
+            this.thermocouple1Label.Text = "Thermocouple 1:\r\n739°C";
+            this.thermocouple1Label.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // thermocouple2Label
+            // 
+            this.thermocouple2Label.BackColor = System.Drawing.SystemColors.Control;
+            this.thermocouple2Label.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.thermocouple2Label.Location = new System.Drawing.Point(803, 9);
+            this.thermocouple2Label.Name = "thermocouple2Label";
+            this.thermocouple2Label.Size = new System.Drawing.Size(147, 65);
+            this.thermocouple2Label.TabIndex = 21;
+            this.thermocouple2Label.Text = "Thermocouple 2:\r\n739°C";
+            this.thermocouple2Label.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // thermocouple3Label
+            // 
+            this.thermocouple3Label.BackColor = System.Drawing.SystemColors.Control;
+            this.thermocouple3Label.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.thermocouple3Label.Location = new System.Drawing.Point(956, 9);
+            this.thermocouple3Label.Name = "thermocouple3Label";
+            this.thermocouple3Label.Size = new System.Drawing.Size(147, 65);
+            this.thermocouple3Label.TabIndex = 22;
+            this.thermocouple3Label.Text = "Thermocouple 3:\r\n739°C";
+            this.thermocouple3Label.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // pressureTransducerLabel
+            // 
+            this.pressureTransducerLabel.BackColor = System.Drawing.SystemColors.Control;
+            this.pressureTransducerLabel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pressureTransducerLabel.Location = new System.Drawing.Point(803, 83);
+            this.pressureTransducerLabel.Name = "pressureTransducerLabel";
+            this.pressureTransducerLabel.Size = new System.Drawing.Size(203, 65);
+            this.pressureTransducerLabel.TabIndex = 24;
+            this.pressureTransducerLabel.Text = "Pressure Transducer:\r\n0 PSI";
+            this.pressureTransducerLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // loadCellLabel
+            // 
+            this.loadCellLabel.BackColor = System.Drawing.SystemColors.Control;
+            this.loadCellLabel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.loadCellLabel.Location = new System.Drawing.Point(650, 83);
+            this.loadCellLabel.Name = "loadCellLabel";
+            this.loadCellLabel.Size = new System.Drawing.Size(147, 65);
+            this.loadCellLabel.TabIndex = 23;
+            this.loadCellLabel.Text = "Load Cell:\r\n0 lbs";
+            this.loadCellLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 606);
+            this.ClientSize = new System.Drawing.Size(1125, 664);
+            this.Controls.Add(this.pressureTransducerLabel);
+            this.Controls.Add(this.loadCellLabel);
+            this.Controls.Add(this.thermocouple3Label);
+            this.Controls.Add(this.thermocouple2Label);
+            this.Controls.Add(this.thermocouple1Label);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.turnOffButton);
@@ -472,6 +538,11 @@
         private System.Windows.Forms.TrackBar servoATrackBarReadout;
         private System.Windows.Forms.TrackBar servoBTrackBarReadout;
         private System.Windows.Forms.TrackBar servoCTrackBarReadout;
+        private System.Windows.Forms.Label thermocouple1Label;
+        private System.Windows.Forms.Label thermocouple2Label;
+        private System.Windows.Forms.Label thermocouple3Label;
+        private System.Windows.Forms.Label pressureTransducerLabel;
+        private System.Windows.Forms.Label loadCellLabel;
     }
 }
 
