@@ -1,0 +1,12 @@
+namespace Calstar;
+
+enum PropUplinkType : byte { Servos = 0, IgnitionOff = 1, Ignition = 3, Ack = 4}
+table PropUplinkMsg {
+    Bytes : uint8;
+    FrameID : uint8;
+    AckReqd : bool;
+    Type : PropUplinkType;
+    Servos : [uint8];
+}
+
+root_type PropUplinkMsg;
