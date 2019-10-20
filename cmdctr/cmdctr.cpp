@@ -151,15 +151,9 @@ void loop() {
                 retry = false;
                 pc.printf("{\"status\":\"retry off\"}\r\n");
             } else {
-                if (retry) {
-                    tx_led = 1;
-                    sendPropUplinkMsg(line, true);
-                    t_tx_led_on = t.read_ms();
-                } else {
-                    tx_led = 1;
-                    sendPropUplinkMsg(line, false);
-                    t_tx_led_on = t.read_ms();
-                }
+                tx_led = 1;
+                sendPropUplinkMsg(line, retry);
+                t_tx_led_on = t.read_ms();
             }
             line = "";
         } else {
@@ -290,10 +284,10 @@ const PropDownlinkMsg *getPropDownlinkMsgChar(char c) {
     if (len == FLATBUF_BUF_SIZE) {
         // If at end of buffer, shift and add to end
         memmove(buffer, buffer + 1, FLATBUF_BUF_SIZE - 1);
-        buffer[FLATBUF_BUF_SIZE - 1] = (uint8_t)c;
+        buffer[FLATBUF_BUF_SIZE - 1] = (uint8_t) c;
     } else {
         // Otherwise build up buffer
-        buffer[len++] = (uint8_t)c;
+        buffer[len++] = (uint8_t) c;
     }
 
     // The verifier will say that buf has a valid message for any length

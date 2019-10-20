@@ -1,0 +1,12 @@
+namespace Calstar;
+
+enum msgType : byte { StateUpdate = 0, Ack = 1 }
+table Msg {
+    Bytes : uint8;
+    FrameID : uint8;
+    AckReqd : uint8;
+    Type : msgType;
+    Payload : [byte];
+}
+
+root_type Msg;
