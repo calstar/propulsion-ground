@@ -1,11 +1,6 @@
 namespace Calstar;
 
-enum PropDownlinkType : byte { StateUpdate = 0, Ack = 1 }
 table PropDownlinkMsg {
-    Bytes : uint8;
-    FrameID : uint8;
-    AckReqd : bool;
-    Type : PropDownlinkType;
     Igniting: bool;
     LoadCell: float;
     Servos: [uint8];
