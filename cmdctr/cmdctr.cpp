@@ -284,10 +284,10 @@ const PropDownlinkMsg *getPropDownlinkMsgChar(char c) {
     if (len == FLATBUF_BUF_SIZE) {
         // If at end of buffer, shift and add to end
         memmove(buffer, buffer + 1, FLATBUF_BUF_SIZE - 1);
-        buffer[FLATBUF_BUF_SIZE - 1] = (uint8_t)c;
+        buffer[FLATBUF_BUF_SIZE - 1] = (uint8_t) c;
     } else {
         // Otherwise build up buffer
-        buffer[len++] = (uint8_t)c;
+        buffer[len++] = (uint8_t) c;
     }
 
     // The verifier will say that buf has a valid message for any length
