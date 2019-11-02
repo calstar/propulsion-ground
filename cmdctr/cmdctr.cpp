@@ -151,15 +151,9 @@ void loop() {
                 retry = false;
                 pc.printf("{\"status\":\"retry off\"}\r\n");
             } else {
-                if (retry) {
-                    tx_led = 1;
-                    sendPropUplinkMsg(line, true);
-                    t_tx_led_on = t.read_ms();
-                } else {
-                    tx_led = 1;
-                    sendPropUplinkMsg(line, false);
-                    t_tx_led_on = t.read_ms();
-                }
+                tx_led = 1;
+                sendPropUplinkMsg(line, retry);
+                t_tx_led_on = t.read_ms();
             }
             line = "";
         } else {

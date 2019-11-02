@@ -117,7 +117,7 @@ void loop() {
         resend_msgs();
         t_last_resend = t.read_ms();
     }
-    
+
     us_timestamp_t current_time = t.read_high_resolution_us();
     if (current_time >= last_radio_send_us + RADIO_SEND_INTERVAL_US && remaining_send_size > 0) {
         // Send over radio
@@ -161,7 +161,7 @@ void loop() {
                     if (a < 0 || a > 180 || (a == 0 && line.substr(3, 3) != "000")) dataOk = false;
                     if (b < 0 || b > 180 || (b == 0 && line.substr(7, 3) != "000")) dataOk = false;
                     if (c < 0 || c > 180 || (c == 0 && line.substr(11,3) != "000")) dataOk = false;
-                    
+
                     if (dataOk) {
                         servos[0] = (uint8_t)a;
                         servos[1] = (uint8_t)b;
@@ -193,7 +193,7 @@ void loop() {
                     // u:$,####,####,####.
                     // Check fields
                     bool fs;
-                    if (line[2] == 't' || line[2] == 'f') { 
+                    if (line[2] == 't' || line[2] == 'f') {
                         fs = line[2] == 't';
                     } else {
                         dataOk = false;
@@ -290,7 +290,7 @@ bool sendPropDownlinkMsg(bool with_ack) {
     auto servos_offset = builder.CreateVector(servos, sizeof(servos));
     auto thermocouples_offset = builder.CreateVector(thermocouples, sizeof(thermocouples));
     auto pressureTransducers_offset = builder.CreateVector(pressureTransducers, sizeof(pressureTransducers));
-    
+
     Offset<PropDownlinkMsg> msg = CreatePropDownlinkMsg(builder, 1, frame_id, with_ack, type,
         igniting, loadCell, servos_offset, thermocouples_offset, flowSwitch, pressureTransducers_offset);
     builder.Finish(msg);

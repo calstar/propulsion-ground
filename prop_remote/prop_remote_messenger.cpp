@@ -8,7 +8,7 @@ class prop_remote_messenger
         unsigned int buffer_len;
 
     prop_remote_messenger(){
-        buffer_len = 0
+        buffer_len = 0;
     }
 
     void update_fc_buf(char c){
