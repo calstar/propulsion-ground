@@ -29,15 +29,42 @@ class cmdctr_serializer : public msg_ser
           PropDownlinkType Type;
           bool Igniting;
           float LoadCell;
+          bool FlowSwitch;
           uint8_t Servos[NUM_SERVOS];
           uint16_t Thermocouples[NUM_THERMOCOUPLES];
-          bool FlowSwitch;
           uint16_t PressureTransducers[NUM_PRESSURE_TRANSDUCERS];
+
+          downlink_data(){
+              Servos = new uint8_t[NUM_SERVOS];
+              Thermocouples = new uint16_t[NUM_THERMOCOUPLES];
+              PressureTransducers = new uint16_t[NUM_PRESSURE_TRANSDUCERS];
+          }
+          ~downlink_data() {
+            if Servos != nullptr {
+              delete[] Servos;
+            }
+            if Thermocouples != nullptr {
+              delete[] Thermocouples;
+            }
+            if PressureTransducers != nullptr {
+              delete[] PressureTransducers;
+            }
+          }
         } ;
 
         struct uplink_data {
             PropUplinkType Type;
             uint8_t Servos[NUM_SERVOS];
+
+            uplink_data() {
+              Servos = new uint8_t[NUM_SERVOS];
+            }
+
+            ~uplink_data() {
+              if Servos != nullptr {
+                delete[] Servos;
+              }
+            }
         } ;
 
     cmdctr_serializer(){
@@ -54,8 +81,6 @@ class cmdctr_serializer : public msg_ser
             // Otherwise build up buffer
             buffer[buffer_len++] = (uint8_t) c;
         }
-
-
     }
 
     /**
@@ -63,73 +88,27 @@ class cmdctr_serializer : public msg_ser
     **/
     const downlink_data *getPropDownlinkData(){
         msg_data incoming_msg = getIncomingMsg(flatbuf_buffer, buffer_len);
-        uint8_t *payload_buf = incoming_msg.payload;
+        uint8_t actual_len = get_verified_length<PropDownlinkMsg>(VerifyPropDownlinkMsgBuffer, GetPropDownlinkMsg, incoming_msg.Payload, incoming_msg.Payload_Size);
+        if actual_len == 0 { return nullptr; }
+        // Now that we've read a valid message, copy it into the output
+        // buffer, then remove it from the input buffer and move
+        // everything else down. Then reduce current buffer length by
+        // the length of the processed message Then clear the rest of
+        // the buffer so that we don't get false positives with the
+        // verifiers
+        uint8_t actual_msg_buf[actual_len];
+        memcpy(actual_msg_buf, incoming_msg.Payload, actual_len);
 
-        Verifier verifier(payload_buf, incoming_msg.Payload_Size);
-        if (VerifyPropDownlinkMsgBuffer(verifier)) {
-            const PropDownlinkMsg *msg = GetPropDownlinkMsg(payload_buf);
-            // The message knows how big it should be
-            const uint8_t expectedBytes = msg->Bytes();
+        const PropDownlinkMsg *actual_msg = GetPropDownlinkMsg(actual_msg_buf);
 
-            uint8_t actual_len = len;
-            if (len < expectedBytes) {
-                // The verifier will say we have a valid message even if
-                // we're a few bytes short Just read more characters at
-                // this point by returning early
-                return nullptr;
-            } else if (len > expectedBytes) {
-                // Now we want to verify that the "smaller buffer" with
-                // length equal to the expected number of bytes is
-                // actually a message in its own right (just a double
-                // check basically)
-                Verifier smallerVerifier(payload_buf, expectedBytes);
-                if (VerifyPropDownlinkMsgBuffer(smallerVerifier)) {
-                    // If it is a message, then make sure we use the
-                    // correct (smaller) length
-                    actual_len = expectedBytes;
-                } else {
-                    // If it isn't valid, then this buffer just has
-                    // some malformed messages... continue and let's
-                    // get them out of the buffer by reading more
-                    return nullptr;
-                }
-            }
+        struct downlink_data data;
+        data.Igniting = actual_msg->Igniting();
+        data.LoadCell = actual_msg->LoadCell();
+        data.FlowSwitch = actual_msg->FlowSwitch();
+        memcpy(data.Servos, actual_msg->Servos()->Data(), actual_msg->Servos()->Data()->size()); //possible room for more efficiency
+        memcpy(data.Thermocouples, actual_msg->Thermocouples()->Data(), actual_msg->Thermocouples()->Data()->size());
+        memcpy(data.PressureTransducers, actual_msg->PressureTransducers()->Data(), actual_msg->PressureTransducers()->Data()->size());
 
-            // Now that we've read a valid message, copy it into the output
-            // buffer, then remove it from the input buffer and move
-            // everything else down. Then reduce current buffer length by
-            // the length of the processed message Then clear the rest of
-            // the buffer so that we don't get false positives with the
-            // verifiers
-            uint8_t actual_msg_buf[actual_len];
-            memcpy(actual_msg_buf, payload_buf, actual_len);
-            const PropDownlinkMsg *actual_msg = GetPropDownlinkMsg(actual_msg_buf);
-            struct downlink_data data;
-            data.Igniting = actual_msg->Igniting();
-            data.LoadCell = actual_msg->LoadCell();
-            data.FlowSwitch = actual_msg->FlowSwitch();
-            flatbuffers::Vector<uint8> servos_vector = actual_msg->Servos();
-            servos_len = servos_vector->Length();
-            uint8_t servos_buf[servos_len];
-            for(i = 0; i < servos_len; i++){
-                servos_buf[i] = servos_vector->Get(i);
-            }
-            data.Servos = servos_buf;
-            flatbuffers::Vector<uint8> thermocouples_vector = actual_msg->Thermocouples();
-            thermocouples_len = thermocouples_vector->Length();
-            uint8_t thermocouples_buf[thermocouples_len];
-            for(i = 0; i < thermocouples_len; i++){
-                thermocouples_buf[i] = thermocouples_vector->Get(i);
-            }
-            data.Thermocouples = thermocouples_buf;
-            flatbuffers::Vector<uint8> pt_vector = actual_msg->PressureTransducers();
-            pt_len = pt_vector->Length();
-            uint8_t pt_buf[pt_len];
-            for(i = 0; i < pt_len; i++){
-                PressureTransducers_buf[i] = pt_vector->Get(i);
-            }
-            data.PressureTransducers = PressureTransducers_buf;
-            return data;
-        }
+        return data;
     }
 }
