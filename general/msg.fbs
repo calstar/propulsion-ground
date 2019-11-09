@@ -6,7 +6,7 @@ table Msg {
     FrameID : uint8;
     AckReqd : uint8;
     Type : msgType;
-    Payload : [byte];
+    Payload : [uint8];
 }
 
 root_type Msg;
