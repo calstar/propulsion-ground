@@ -3,7 +3,7 @@ build_toolchain = GCC_ARM
 build_dir = BUILD
 project_name = prop_remote
 
-outdir = out/
+outdir = /vagrant/out/
 outname = prop_remote.bin
 outpath = $(outdir)$(outname)
 

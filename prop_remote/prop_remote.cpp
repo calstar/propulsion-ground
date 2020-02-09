@@ -20,7 +20,7 @@
 #include "mbed.h"
 #include "pins.h"
 
-#include "RFM69/RFM69.hpp"
+#include "RFM69.hpp"
 #include "USBSerial.h"
 #include <inttypes.h>
 #include <string>
@@ -51,10 +51,11 @@ using namespace Calstar;
 Timer t;
 
 Serial daq(DEBUG_TX, DEBUG_RX, DAQ_BAUDRATE);
-USBSerial pc(0x1f00, 0x2019, 0x0002, false);
+//USBSerial pc(0x1f00, 0x2019, 0x0002, false);
 
 uint8_t rx_buf[RX_BUF_LEN];
 RFM69 radio(SPI1_MOSI, SPI1_MISO, SPI1_SCLK, SPI1_SSEL, RADIO_RST, true);
+DigitalOut igniter(FC_SWITCH);
 
 std::string line = "";
 
@@ -97,6 +98,8 @@ int main() {
 }
 
 void start() {
+    igniter = 0;
+
     radio.reset();
 
     radio.init();
@@ -117,7 +120,7 @@ void loop() {
         resend_msgs();
         t_last_resend = t.read_ms();
     }
-    
+
     us_timestamp_t current_time = t.read_high_resolution_us();
     if (current_time >= last_radio_send_us + RADIO_SEND_INTERVAL_US && remaining_send_size > 0) {
         // Send over radio
@@ -136,9 +139,6 @@ void loop() {
             if (line[line.length()-1] == '\r') {
                 // Remove \r before printing
                 line = line.substr(0, line.length()-1);
-            }
-            if (pc.configured()) {
-                pc.printf("Read from DAQ: \"%s\"\r\n", line.c_str());
             }
 
             // Format:
@@ -161,39 +161,27 @@ void loop() {
                     if (a < 0 || a > 180 || (a == 0 && line.substr(3, 3) != "000")) dataOk = false;
                     if (b < 0 || b > 180 || (b == 0 && line.substr(7, 3) != "000")) dataOk = false;
                     if (c < 0 || c > 180 || (c == 0 && line.substr(11,3) != "000")) dataOk = false;
-                    
+
                     if (dataOk) {
                         servos[0] = (uint8_t)a;
                         servos[1] = (uint8_t)b;
                         servos[2] = (uint8_t)c;
                         retry = true;
-                        if (pc.configured()) {
-                            pc.printf("Sending downlink: servos(%03d,%03d,%03d)\r\n", a, b, c);
-                        }
                     }
                 } else if (line == "o.") {
                     igniting = false;
                     retry = true;
-                    if (pc.configured()) {
-                        pc.printf("Sending downlink: ignition off\r\n");
-                    }
                 } else if (line == "i.") {
                     igniting = true;
                     retry = true;
-                    if (pc.configured()) {
-                        pc.printf("Sending downlink: igniting\r\n");
-                    }
                 } else if (line == "d.") {
                     igniting = false;
                     retry = true;
-                    if (pc.configured()) {
-                        pc.printf("Sending downlink: ignition done\r\n");
-                    }
                 } else if (line[0] == 'u' && line[1] == ':' && line[3] == ',' && line[8] == ',' && line[13] == ',') {
                     // u:$,####,####,####.
                     // Check fields
                     bool fs;
-                    if (line[2] == 't' || line[2] == 'f') { 
+                    if (line[2] == 't' || line[2] == 'f') {
                         fs = line[2] == 't';
                     } else {
                         dataOk = false;
@@ -212,9 +200,6 @@ void loop() {
                         thermocouples[0] = (uint16_t)tc1;
                         thermocouples[1] = (uint16_t)tc2;
                         thermocouples[2] = (uint16_t)tc3;
-                        if (pc.configured()) {
-                            pc.printf("Sending downlink: update(%d,%d,%d,%d)\r\n", fs, tc1, tc2, tc3);
-                        }
                     }
                 }
             } else {
@@ -242,37 +227,18 @@ void loop() {
                         acks_remaining.erase(msg->FrameID());
                     }
                 } else if (msg->Type() == PropUplinkType_Servos) {
-                    if (pc.configured()) {
-                        pc.printf("Received servo command");
-                    }
                     const Vector<uint8_t>* servos = msg->Servos();
                     if (servos->size() >= 3) {
                         int a = servos->Get(0);
                         int b = servos->Get(1);
                         int c = servos->Get(2);
-                        if (pc.configured()) {
-                            pc.printf(" with a=%03d,b=%03d,c=%03d", a, b, c);
-                        }
                         // Print numbers zero-padded to 3 digits
                         daq.printf("a%03db%03dc%03d\n", a, b, c);
-                    } else {
-                        if (pc.configured()) {
-                            pc.printf(" (size != 3)");
-                        }
-                    }
-                    if (pc.configured()) {
-                        pc.printf("\r\n");
                     }
                 } else if (msg->Type() == PropUplinkType_IgnitionOff) {
-                    if (pc.configured()) {
-                        pc.printf("Received off command\r\n");
-                    }
-                    daq.printf("off\n");
+                    igniter = 0;
                 } else if (msg->Type() == PropUplinkType_Ignition) {
-                    if (pc.configured()) {
-                        pc.printf("Received ignite command\r\n");
-                    }
-                    daq.printf("ignite\n");
+                    igniter = 1;
                 }
                 if (msg->AckReqd()) {
                     sendAck(msg->FrameID());
@@ -290,7 +256,7 @@ bool sendPropDownlinkMsg(bool with_ack) {
     auto servos_offset = builder.CreateVector(servos, sizeof(servos));
     auto thermocouples_offset = builder.CreateVector(thermocouples, sizeof(thermocouples));
     auto pressureTransducers_offset = builder.CreateVector(pressureTransducers, sizeof(pressureTransducers));
-    
+
     Offset<PropDownlinkMsg> msg = CreatePropDownlinkMsg(builder, 1, frame_id, with_ack, type,
         igniting, loadCell, servos_offset, thermocouples_offset, flowSwitch, pressureTransducers_offset);
     builder.Finish(msg);
