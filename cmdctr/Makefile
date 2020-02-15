@@ -3,7 +3,7 @@ build_toolchain = GCC_ARM
 build_dir = BUILD
 project_name = cmdctr
 
-outdir = out/
+outdir = /vagrant/out/
 outname = cmdctr.bin
 outpath = $(outdir)$(outname)
 

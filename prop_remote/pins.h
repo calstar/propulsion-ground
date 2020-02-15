@@ -1,5 +1,8 @@
-#define DEBUG_TX (PC_6)
-#define DEBUG_RX (PC_7)
+#define DEBUG_TX (PA_2)
+#define DEBUG_RX (PA_3)
+#define RS422_TX (PC_6)
+#define RS422_RX (PC_7)
+#define FC_SWITCH (PB_13)
 
 #define SPI1_MOSI (PA_7)
 #define SPI1_MISO (PA_6)
@@ -7,10 +10,7 @@
 #define SPI1_SSEL (PA_4)
 #define RADIO_RST (PC_1)
 
-#define IO1 (PB_5)
-#define IO2 (PB_6)
-#define IO3 (PB_8)
-#define IO4 (PB_7)
+#define BATT_VOLTAGE (PC_2)
 
-#define LED_RX (PB_12)
-#define LED_TX (PB_13)
+#define GPS_TX (PA_9) // TX from STM view
+#define GPS_RX (PA_10) // RX from STM view

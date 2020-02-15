@@ -1,3 +1,6 @@
 [submodule "prop_remote/firmware-lib"]
 	path = prop_remote/firmware-lib
 	url = git@github.com:calstar/firmware-lib.git
+[submodule "cmdctr/firmware-lib"]
+	path = cmdctr/firmware-lib
+	url = git@github.com:calstar/firmware-lib.git

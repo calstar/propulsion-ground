@@ -64,7 +64,7 @@ Timer t;
 USBSerial pc;
 
 uint8_t rx_buf[RX_BUF_LEN];
-RFM69 radio(SPI1_MOSI, SPI1_MISO, SPI1_SCLK, SPI1_SSEL, RADIO_RST, true);
+//RFM69 radio(SPI1_MOSI, SPI1_MISO, SPI1_SCLK, SPI1_SSEL, RADIO_RST, true);
 
 std::string line = "";
 bool retry = true;
@@ -106,14 +106,14 @@ void start() {
     tx_led = 0;
     tx_lock = 0;
 
-    radio.reset();
-    pc.printf("{\"status\":\"radio reset\"}\r\n");
+    // radio.reset();
+    // pc.printf("{\"status\":\"radio reset\"}\r\n");
 
-    radio.init();
-    radio.setAESEncryption(ENCRYPT_KEY, strlen(ENCRYPT_KEY));
+    // radio.init();
+    // radio.setAESEncryption(ENCRYPT_KEY, strlen(ENCRYPT_KEY));
 
-    radio.setHighPowerSettings(true);
-    radio.setPowerDBm(20);
+    // radio.setHighPowerSettings(true);
+    // radio.setPowerDBm(20);
 
     t.start();
     t_tx_led_on = t.read_ms();
@@ -130,7 +130,7 @@ void start() {
 
 void loop() {
     if (t.read_ms() - t_last_resend > ACK_CHECK_INTERVAL_MS) {
-        resend_msgs();
+        //resend_msgs();
         t_last_resend = t.read_ms();
     }
     if (tx_led.read() == 1 && t.read_ms() - t_tx_led_on > LED_ON_TIME_MS) {
@@ -153,11 +153,11 @@ void loop() {
             } else {
                 if (retry) {
                     tx_led = 1;
-                    sendPropUplinkMsg(line, true);
+                    //sendPropUplinkMsg(line, true);
                     t_tx_led_on = t.read_ms();
                 } else {
                     tx_led = 1;
-                    sendPropUplinkMsg(line, false);
+                    //sendPropUplinkMsg(line, false);
                     t_tx_led_on = t.read_ms();
                 }
             }
@@ -167,66 +167,66 @@ void loop() {
         }
     }
 
-    const int32_t num_bytes_rxd = radio.receive((char *)rx_buf, sizeof(rx_buf));
-    if (num_bytes_rxd > 1) {
-        rx_buf[num_bytes_rxd] = '\0';
-        rx_led = 1;
-        t_rx_led_on = t.read_ms();
-        for (int32_t i = 0; i < num_bytes_rxd - 1; ++i) {
-            const PropDownlinkMsg *msg = getPropDownlinkMsgChar(rx_buf[i + 1]);
-            if (msg != nullptr) {
-                if (msg->Type() == PropDownlinkType_Ack) {
-                    if (acks_remaining.count(msg->FrameID()) == 1) {
-                        acks_remaining.erase(msg->FrameID());
-                    }
-                } else if (msg->Type() == PropDownlinkType_StateUpdate) {
-                    bool igniting = msg->Igniting();
-                    float loadCell = msg->LoadCell();
-                    const Vector<uint8_t> *servos = msg->Servos();
-                    int servosLen = servos->size() / sizeof(uint8_t);
-                    const Vector<uint16_t> *thermocouples = msg->Thermocouples();
-                    int thermocouplesLen = thermocouples->size() / sizeof(uint16_t);
-                    bool flowSwitch = msg->FlowSwitch();
-                    const Vector<uint16_t> *pressureTransducers = msg->PressureTransducers();
-                    int pressureTransducersLen = pressureTransducers->size() / sizeof(uint16_t);
+    // const int32_t num_bytes_rxd = radio.receive((char *)rx_buf, sizeof(rx_buf));
+    // if (num_bytes_rxd > 1) {
+    //     rx_buf[num_bytes_rxd] = '\0';
+    //     rx_led = 1;
+    //     t_rx_led_on = t.read_ms();
+    //     for (int32_t i = 0; i < num_bytes_rxd - 1; ++i) {
+    //         const PropDownlinkMsg *msg = getPropDownlinkMsgChar(rx_buf[i + 1]);
+    //         if (msg != nullptr) {
+    //             if (msg->Type() == PropDownlinkType_Ack) {
+    //                 if (acks_remaining.count(msg->FrameID()) == 1) {
+    //                     acks_remaining.erase(msg->FrameID());
+    //                 }
+    //             } else if (msg->Type() == PropDownlinkType_StateUpdate) {
+    //                 bool igniting = msg->Igniting();
+    //                 float loadCell = msg->LoadCell();
+    //                 const Vector<uint8_t> *servos = msg->Servos();
+    //                 int servosLen = servos->size() / sizeof(uint8_t);
+    //                 const Vector<uint16_t> *thermocouples = msg->Thermocouples();
+    //                 int thermocouplesLen = thermocouples->size() / sizeof(uint16_t);
+    //                 bool flowSwitch = msg->FlowSwitch();
+    //                 const Vector<uint16_t> *pressureTransducers = msg->PressureTransducers();
+    //                 int pressureTransducersLen = pressureTransducers->size() / sizeof(uint16_t);
 
-                    std::string ignitingStr = igniting ? "true" : "false";
-                    std::string loadCellStr = "null"; // TODO: output float
-                    std::string servosStr = "[";
-                    for (int i = 0; i < servosLen; i++) {
-                        servosStr += std::to_string(servos->Get(i));
-                        if (i < servosLen - 1) {
-                            servosStr += ",";
-                        }
-                    }
-                    servosStr += "]";
-                    std::string thermocouplesStr = "[";
-                    for (int i = 0; i < thermocouplesLen; i++) {
-                        thermocouplesStr += std::to_string(thermocouples->Get(i));
-                        if (i < thermocouplesLen - 1) {
-                            thermocouplesStr += ",";
-                        }
-                    }
-                    thermocouplesStr += "]";
-                    std::string flowSwitchStr = flowSwitch ? "true" : "false";
-                    std::string pressureTransducersStr = "[";
-                    for (int i = 0; i < pressureTransducersLen; i++) {
-                        pressureTransducersStr += std::to_string(pressureTransducers->Get(i));
-                        if (i < pressureTransducersLen - 1) {
-                            pressureTransducersStr += ",";
-                        }
-                    }
-                    pressureTransducersStr += "]";
+    //                 std::string ignitingStr = igniting ? "true" : "false";
+    //                 std::string loadCellStr = "null"; // TODO: output float
+    //                 std::string servosStr = "[";
+    //                 for (int i = 0; i < servosLen; i++) {
+    //                     servosStr += std::to_string(servos->Get(i));
+    //                     if (i < servosLen - 1) {
+    //                         servosStr += ",";
+    //                     }
+    //                 }
+    //                 servosStr += "]";
+    //                 std::string thermocouplesStr = "[";
+    //                 for (int i = 0; i < thermocouplesLen; i++) {
+    //                     thermocouplesStr += std::to_string(thermocouples->Get(i));
+    //                     if (i < thermocouplesLen - 1) {
+    //                         thermocouplesStr += ",";
+    //                     }
+    //                 }
+    //                 thermocouplesStr += "]";
+    //                 std::string flowSwitchStr = flowSwitch ? "true" : "false";
+    //                 std::string pressureTransducersStr = "[";
+    //                 for (int i = 0; i < pressureTransducersLen; i++) {
+    //                     pressureTransducersStr += std::to_string(pressureTransducers->Get(i));
+    //                     if (i < pressureTransducersLen - 1) {
+    //                         pressureTransducersStr += ",";
+    //                     }
+    //                 }
+    //                 pressureTransducersStr += "]";
 
-                    pc.printf("{\"update\":{\"igniting\":%s,\"loadCell\":%s,\"servos\":%s,\"thermocouples\":%s,\"flowSwitch\":%s,\"pressureTransducers\":%s}}\r\n",
-                        ignitingStr.c_str(), loadCellStr.c_str(), servosStr.c_str(), thermocouplesStr.c_str(), flowSwitchStr.c_str(), pressureTransducersStr.c_str());
-                }
-                if (msg->AckReqd()) {
-                    sendAck(msg->FrameID());
-                }
-            }
-        }
-    }
+    //                 pc.printf("{\"update\":{\"igniting\":%s,\"loadCell\":%s,\"servos\":%s,\"thermocouples\":%s,\"flowSwitch\":%s,\"pressureTransducers\":%s}}\r\n",
+    //                     ignitingStr.c_str(), loadCellStr.c_str(), servosStr.c_str(), thermocouplesStr.c_str(), flowSwitchStr.c_str(), pressureTransducersStr.c_str());
+    //             }
+    //             if (msg->AckReqd()) {
+    //                 sendAck(msg->FrameID());
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 bool sendPropUplinkMsg(const std::string &str, bool with_ack) {
@@ -275,7 +275,7 @@ bool sendPropUplinkMsg(const std::string &str, bool with_ack) {
     if (with_ack) {
         acks_remaining.insert({frame_id, {std::vector<uint8_t>(buf, buf + size), 0}});
     }
-    radioTx(buf, size);
+    //radioTx(buf, size);
 
     ++frame_id;
 
@@ -354,7 +354,7 @@ void resend_msgs() {
     for (auto &msg : acks_remaining) {
         tx_led = 1;
         const std::vector<uint8_t> &vec = std::get<0>(msg.second);
-        radioTx(vec.data(), vec.size());
+        //radioTx(vec.data(), vec.size());
         std::get<1>(msg.second) = std::get<1>(msg.second) + 1;
         if (std::get<1>(msg.second) >= MAX_NUM_RETRIES) {
             pc.printf("{\"status\":\"Failed to send frame: Exceeded max number of retries.\"}\r\n");
@@ -374,12 +374,12 @@ void sendAck(uint8_t frame_id) {
     builder.Reset();
     ack = CreatePropUplinkMsg(builder, bytes, frame_id, false, PropUplinkType_Ack, 0);
     builder.Finish(ack);
-    radioTx(builder.GetBufferPointer(), builder.GetSize());
+    //radioTx(builder.GetBufferPointer(), builder.GetSize());
 }
 
 
 void radioTx(const uint8_t *const data, const int32_t data_len) {
-    radio.send(data, data_len);
+    //radio.send(data, data_len);
     pc.printf("{\"status\":\"Sending %d bytes\"}\r\n", data_len);
     // WARNING: Only works because payloads are fewer bytes than max radio can send at once (~64)
 }
