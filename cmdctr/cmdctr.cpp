@@ -61,7 +61,9 @@ DigitalIn io3(IO3);
 DigitalIn io4(IO4);
 Timer t;
 
-USBSerial pc;
+//USBSerial pc;
+#define DEBUG_UART_BAUDRATE (115200)
+Serial pc(DEBUG_TX, DEBUG_RX, DEBUG_UART_BAUDRATE);
 
 uint8_t rx_buf[RX_BUF_LEN];
 //RFM69 radio(SPI1_MOSI, SPI1_MISO, SPI1_SCLK, SPI1_SSEL, RADIO_RST, true);
@@ -129,6 +131,7 @@ void start() {
 }
 
 void loop() {
+    pc.printf("im doing something");
     if (t.read_ms() - t_last_resend > ACK_CHECK_INTERVAL_MS) {
         //resend_msgs();
         t_last_resend = t.read_ms();
