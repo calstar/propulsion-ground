@@ -61,7 +61,8 @@ DigitalIn io3(IO3);
 DigitalIn io4(IO4);
 Timer t;
 
-USBSerial pc;
+//USBSerial pc;
+Serial pc(DEBUG_TX, DEBUG_RX, 115200);
 
 uint8_t rx_buf[RX_BUF_LEN];
 RFM69 radio(SPI1_MOSI, SPI1_MISO, SPI1_SCLK, SPI1_SSEL, RADIO_RST, true);
@@ -92,6 +93,7 @@ void radioTx(const uint8_t *const data, const int32_t data_len);
 bool validServoCmd(const std::string &str);
 bool validIgnitionOffCmd(const std::string &str);
 bool validIgnitionCmd(const std::string &str);
+bool advertised = false;
 
 int main() {
     start();
@@ -102,6 +104,10 @@ int main() {
 }
 
 void start() {
+    //To be replaced with USBSerial once it has been debugged for Mbed-5.15
+    //pc.baud(115200);
+    pc.set_blocking(false);
+
     rx_led = 0;
     tx_led = 0;
     tx_lock = 0;
@@ -140,10 +146,14 @@ void loop() {
         rx_led = 0;
     }
     tx_lock = io1 ? 0 : 1;
-
+    
+    if(acks_remaining.size() == 0 && !advertised){
+        pc.printf("\rEnter Command: ");
+        advertised = true;
+    }
     if (pc.readable()) {
         const char in = pc.getc();
-        if (in == '\n') {
+        if (in == '\n' || in == '\r') {
             if (line == COMMAND_YES_RETRY) {
                 retry = true;
                 pc.printf("{\"status\":\"retry on\"}\r\n");
@@ -151,18 +161,14 @@ void loop() {
                 retry = false;
                 pc.printf("{\"status\":\"retry off\"}\r\n");
             } else {
-                if (retry) {
-                    tx_led = 1;
-                    sendPropUplinkMsg(line, true);
-                    t_tx_led_on = t.read_ms();
-                } else {
-                    tx_led = 1;
-                    sendPropUplinkMsg(line, false);
-                    t_tx_led_on = t.read_ms();
-                }
+                tx_led = 1;
+                sendPropUplinkMsg(line, retry);
+                advertised = false;
+                t_tx_led_on = t.read_ms();
             }
             line = "";
         } else {
+            pc.putc(in);
             line += in;
         }
     }
@@ -354,6 +360,7 @@ void resend_msgs() {
     for (auto &msg : acks_remaining) {
         tx_led = 1;
         const std::vector<uint8_t> &vec = std::get<0>(msg.second);
+        pc.printf("Resending Message: %d\n", msg.first);
         radioTx(vec.data(), vec.size());
         std::get<1>(msg.second) = std::get<1>(msg.second) + 1;
         if (std::get<1>(msg.second) >= MAX_NUM_RETRIES) {

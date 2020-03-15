@@ -113,6 +113,8 @@ void start() {
     frame_id = 0;
 
     t_last_resend = t.read_ms();
+
+    //daq.printf("Reset...\r\n");
 }
 
 void loop() {
@@ -233,7 +235,7 @@ void loop() {
                         int b = servos->Get(1);
                         int c = servos->Get(2);
                         // Print numbers zero-padded to 3 digits
-                        daq.printf("a%03db%03dc%03d\n", a, b, c);
+                        daq.printf("a%03db%03dc%03d\r\n", a, b, c);
                     }
                 } else if (msg->Type() == PropUplinkType_IgnitionOff) {
                     igniter = 0;
